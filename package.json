@@ -1,0 +1,16 @@
+{
+  "name": "paintbrush",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun --hot server.ts"
+  },
+  "bun-create": {
+    "start": "echo '\n  Run: bun dev\n'"
+  },
+  "engines": {
+    "bun": ">=1.3.10"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.9"
+  }
+}
