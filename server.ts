@@ -26,11 +26,14 @@ const server = Bun.serve({
     "/*": () => Response.json({ error: "Not found" }, { status: 404 }),
   },
   websocket: {
+    idleTimeout: 60,
+    sendPings: true,
     message(ws, raw) {
       try {
         const msg = JSON.parse(String(raw));
         const topics = getNotifyTopics();
-        if (msg.action === "opendoc" && topics.has(msg.resource))  ws.subscribe(msg.resource);
+        if (msg.action === "opendoc" && topics.has(msg.resource))
+          ws.subscribe(msg.resource);
         if (msg.action === "closedoc") ws.unsubscribe(msg.resource);
       } catch {}
     },
