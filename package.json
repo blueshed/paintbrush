@@ -2,7 +2,7 @@
   "name": "paintbrush",
   "version": "0.1.0",
   "scripts": {
-    "dev": "bun --hot server.ts"
+    "dev": "PORT=3001 bun --hot server.ts"
   },
   "bun-create": {
     "start": "bun dev"

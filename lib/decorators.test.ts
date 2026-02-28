@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
-import { Resource, Field, Controller, GET, buildRoutes, serverRef } from "./decorators";
+import { Resource, Field, Controller, GET, buildRoutes } from "./decorators";
+import { provide } from "./shared";
 import { memoryStore } from "./stores";
 import type { Store } from "./stores";
 
@@ -49,7 +50,7 @@ describe("buildRoutes — CRUD", () => {
   let routes: any;
 
   beforeEach(() => {
-    serverRef.current = null;
+    provide("server", null);
     const Item = makeTestResource();
     routes = buildRoutes(Item);
   });
@@ -155,11 +156,11 @@ describe("buildRoutes — notify publish", () => {
 
   beforeEach(() => {
     published = [];
-    serverRef.current = {
+    provide("server", {
       publish(topic: string, message: string) {
         published.push({ topic, message });
       },
-    };
+    });
     const Item = makeTestResource();
     routes = buildRoutes(Item);
   });
@@ -202,8 +203,8 @@ describe("buildRoutes — notify publish", () => {
     expect(msg.id).toBe(id);
   });
 
-  test("no publish when serverRef is null", async () => {
-    serverRef.current = null;
+  test("no publish when server is not provided", async () => {
+    provide("server", null);
     await routes["/api/items"].POST(jsonReq({ name: "Silent" }));
     expect(published).toHaveLength(0);
   });
@@ -214,7 +215,7 @@ describe("buildRoutes — notify publish", () => {
 describe("buildRoutes — resource without notify", () => {
   test("does not publish on writes", async () => {
     const published: any[] = [];
-    serverRef.current = { publish(_t: string, _m: string) { published.push(1); } };
+    provide("server", { publish(_t: string, _m: string) { published.push(1); } });
 
     const quietStore = memoryStore();
 

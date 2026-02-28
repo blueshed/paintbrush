@@ -5,18 +5,20 @@ Ask the user for:
 1. **Resource name** (singular, e.g. "project", "task", "bookmark")
 2. **Fields** — name, type, and options (required? readonly? default value?)
 3. **Real-time?** — should it have WebSocket live updates (`notify`) or be REST-only?
+4. **Storage** — `sqlite` (default) or `json` file?
 
-Then create all files using the patterns below. Use the resource name throughout (lowercase for files/paths, PascalCase for the class).
+Then create all files using the patterns below. Use the resource name throughout (lowercase for files/paths, PascalCase for the class). Each resource gets its own subfolder under `resources/`.
 
 ## Files to create
 
-### 1. `resources/{name}s-api.ts` — Resource class
+### 1. `resources/{name}s/{name}s-api.ts` — Resource class
 
+For SQLite storage:
 ```ts
-import { Resource, Field } from "../lib/decorators";
-import { jsonFile } from "../lib/stores";
+import { Resource, Field } from "../../lib/decorators";
+import { sqliteStore } from "../../lib/sqlite-store";
 
-@Resource("/api/{name}s", jsonFile(import.meta.dir + "/{name}s.json"), { notify: "{name}s" })
+@Resource("/api/{name}s", sqliteStore("{name}s"), { notify: "{name}s" })
 // Omit the third argument if REST-only (no real-time)
 export class {Name} {
   @Field({ required: true }) accessor title: string = "";
@@ -26,9 +28,23 @@ export class {Name} {
 }
 ```
 
-### 2. `resources/{name}s.ts` — Client wrappers
+For JSON file storage:
+```ts
+import { Resource, Field } from "../../lib/decorators";
+import { jsonFile } from "../../lib/stores";
 
-Follow the pattern in `resources/notes.ts` for REST-only, or `resources/todos.ts` for real-time. Include:
+@Resource("/api/{name}s", jsonFile(import.meta.dir + "/{name}s.json"), { notify: "{name}s" })
+// Omit the third argument if REST-only (no real-time)
+export class {Name} {
+  @Field({ required: true }) accessor title: string = "";
+  @Field({ readonly: true }) accessor createdAt: string = "";
+  id: string = "";
+}
+```
+
+### 2. `resources/{name}s/{name}s.ts` — Client wrappers
+
+Follow the pattern in `resources/notes/notes.ts` for REST-only, or `resources/todos/todos.ts` for real-time. Include:
 - `load{Name}s()` — GET list
 - `load{Name}(id)` — GET by id
 - `create{Name}(data)` — POST
@@ -36,16 +52,16 @@ Follow the pattern in `resources/notes.ts` for REST-only, or `resources/todos.ts
 - `delete{Name}(id)` — DELETE
 - If real-time: `connect{Name}s(ws)` — returns `{ {name}s: Signal<Map<string, Signal<{Name}>>>, dispose }`
 
-### 3. `resources/{name}s-views.ts` — Views
+### 3. `resources/{name}s/{name}s-views.ts` — Views
 
-Follow the pattern in `resources/notes-views.ts` for REST-only, or `resources/todos-views.ts` for real-time. Include:
+Follow the pattern in `resources/notes/notes-views.ts` for REST-only, or `resources/todos/todos-views.ts` for real-time. Include:
 - `{name}ListView(root, ws?)` — list view with create button
 - `{name}DetailView(root, id)` — edit form with autosave and delete
 - Cancelled guards on async views
 - Event delegation on lists
 - `esc()` on all user content and attribute values
 
-### 4. `resources/{name}s.json` — Empty data file
+### 4. `resources/{name}s/{name}s.json` — Empty data file (JSON storage only)
 
 ```json
 []
@@ -56,21 +72,22 @@ Follow the pattern in `resources/notes-views.ts` for REST-only, or `resources/to
 ### 5. `server.ts` — Register the resource
 
 ```ts
-import { {Name} } from "./resources/{name}s-api";
+import { {Name} } from "./resources/{name}s/{name}s-api";
 // Add to buildRoutes:
-...buildRoutes(Note, Todo, {Name}, Stats),
+...buildRoutes(Note, Todo, Checklist, {Name}, Admin),
 ```
 
 ### 6. `app.ts` — Add client routes
 
 ```ts
-import { {name}ListView, {name}DetailView } from "./resources/{name}s-views";
+import { {name}ListView, {name}DetailView } from "./resources/{name}s/{name}s-views";
 // Add to routes():
 "/{name}s": () => {name}ListView(app, ws),  // omit ws if REST-only
 "/{name}s/:id": ({ id }) => {name}DetailView(app, id),
 ```
 
-Add a nav item in `homeView`:
+### 7. `resources/home-view.ts` — Add nav item
+
 ```ts
 <li class="nav-item" id="go-{name}s">{Name}s</li>
 // and the click handler:

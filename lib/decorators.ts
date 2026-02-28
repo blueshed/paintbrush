@@ -11,13 +11,11 @@
  */
 
 import type { Store } from "./stores";
+import { tryInject } from "./shared";
 
 // ── Metadata ──
 
 const META = Symbol("paintbrush");
-
-/** Lazy server reference — set after Bun.serve() returns. */
-export const serverRef: { current: any } = { current: null };
 
 /** Valid notify topic names, populated by buildRoutes(). */
 const _notifyTopics = new Set<string>();
@@ -162,8 +160,9 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
           const item = { ...defaults, ...body, id, createdAt: body.createdAt ?? new Date().toISOString() };
           items.push(item);
           await store.write(items);
-          if (notify && serverRef.current) {
-            serverRef.current.publish(notify, JSON.stringify({ resource: notify, action: "create", item }));
+          const server = tryInject<any>("server");
+          if (notify && server) {
+            server.publish(notify, JSON.stringify({ resource: notify, action: "create", item }));
           }
           return Response.json(item, { status: 201 });
         },
@@ -185,8 +184,9 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
           for (const field of readonlyFields) delete body[field];
           items[idx] = { ...items[idx], ...body, id: req.params.id };
           await store.write(items);
-          if (notify && serverRef.current) {
-            serverRef.current.publish(notify, JSON.stringify({ resource: notify, action: "update", id: req.params.id, fields: body }));
+          const server = tryInject<any>("server");
+          if (notify && server) {
+            server.publish(notify, JSON.stringify({ resource: notify, action: "update", id: req.params.id, fields: body }));
           }
           return Response.json(items[idx]);
         },
@@ -197,8 +197,9 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
             return Response.json({ error: "Not found" }, { status: 404 });
           }
           await store.write(filtered);
-          if (notify && serverRef.current) {
-            serverRef.current.publish(notify, JSON.stringify({ resource: notify, action: "delete", id: req.params.id }));
+          const server = tryInject<any>("server");
+          if (notify && server) {
+            server.publish(notify, JSON.stringify({ resource: notify, action: "delete", id: req.params.id }));
           }
           return new Response(null, { status: 204 });
         },

@@ -1,5 +1,5 @@
-import { navigate, type Dispose } from "../lib/signals";
-import { esc } from "../lib/utils";
+import { navigate, type Dispose } from "../../lib/signals";
+import { esc } from "../../lib/utils";
 import { loadNotes, createNote, loadNote, saveNote, deleteNote } from "./notes";
 
 export function noteListView(root: HTMLElement): Dispose | void {
