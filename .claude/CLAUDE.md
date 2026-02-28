@@ -5,7 +5,7 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 ## Commands
 
 - `bun dev` — start server with hot reload
-- `bun test` — run tests (41 tests across 4 files, ~60ms)
+- `bun test` — run tests (77 tests across 8 files, ~100ms)
 - `bunx tsc --noEmit` — type-check
 - `/add-resource` — skill: scaffolds a new resource (all files + wiring)
 
@@ -16,8 +16,13 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 - `index.html` — HTML shell (Bun bundles app.ts via HTMLBundle)
 - `styles.css` — all styles
 - `bunfig.toml` — test config (`root = "."` for recursive test discovery)
+- `docs/` — reference docs: `railway.md` (deployment), `auth.md` (sessions, tokens, TOTP), `cqrs.md` (document pattern)
 - `lib/` — framework internals:
-  - `decorators.ts` — `@Resource`, `@Field`, `@Controller`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `buildRoutes()`
+  - `decorators.ts` — `@Resource`, `@Field`, `@Auth`, `@Controller`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `buildRoutes()`
+  - `auth.ts` — re-exports `@Auth` from decorators
+  - `sessions.ts` — `createSessionStore(db)`: cookie-based sessions backed by SQLite
+  - `tokens.ts` — `createTokenStore(db)`: single-use magic link tokens backed by SQLite
+  - `totp.ts` — `generateSecret()`, `verifyCode()`: TOTP for passwordless admin auth
   - `stores.ts` — `Store<T>` interface, `memoryStore()`, `jsonFile()`
   - `sqlite-store.ts` — `createDatabase()`, `GranularStore<T>`, lazy `sqliteStore()` factory, backup/restore
   - `shared.ts` — `provide`/`inject`/`tryInject` named resource registry
@@ -47,9 +52,10 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 
 - `@Resource(path, store, opts?)` — class: CRUD resource. `opts.notify` enables WebSocket pub/sub.
 - `@Field(opts?)` — auto-accessor: `required`, `readonly`
+- `@Auth(role?)` — class/method: requires authentication. No role = any authenticated user; with role = must match `session.role`. Returns 401/403. Attaches `req.session`.
 - `@Controller` — class: attaches route metadata for non-resource classes
 - `@GET(path)`, `@POST`, `@PUT`, `@DELETE` — method: custom endpoints
-- `buildRoutes(...classes)` — reads metadata, returns route object for Bun.serve()
+- `buildRoutes(...classes)` — reads metadata, returns route object for Bun.serve(). Wraps auth-decorated handlers.
 
 ## Stores
 
@@ -58,11 +64,17 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 - `sqliteStore(table)` — lazy factory: defers `inject("db")` until first request. Used by checklists.
 - `createDatabase(path)` — creates SQLite connection with WAL mode, write queue, backup/restore. Called in server.ts, registered via `provide("db", ...)`.
 
+## Authentication
+
+Sessions, tokens, and TOTP modules live in `lib/` but are not used by the demo resources. See [`docs/auth.md`](../docs/auth.md) for full API reference. The `@Auth` decorator is documented above in Decorators.
+
 ## Server bootstrap
 
 ```
 provide("db", createDatabase(dbPath))  →  Bun.serve({ routes: { ... } })  →  provide("server", server)
 ```
+
+Apps using `@Auth` also need: `provide("sessions", createSessionStore(db))` and `provide("tokens", createTokenStore(db))` before `Bun.serve()`. See [`docs/auth.md`](../docs/auth.md).
 
 Resources use `sqliteStore(table)` at decoration time (lazy — no db access until first request). The server ref is available via `tryInject("server")` for WebSocket publish in CRUD handlers.
 
@@ -81,7 +93,7 @@ Restore uses a generation counter so all stores re-prepare their SQLite statemen
 
 ## Testing pattern
 
-`buildRoutes()` returns plain handler functions. Tests call them with mock `Request` objects and `memoryStore()`. Use `provide("server", { publish: spy })` for WebSocket assertions. Use `provide("db", createDatabase(":memory:"))` for SQLite-backed tests.
+`buildRoutes()` returns plain handler functions. Tests call them with mock `Request` objects and `memoryStore()`. Use `provide("server", { publish: spy })` for WebSocket assertions. Use `provide("db", createDatabase(":memory:"))` for SQLite-backed tests. Auth tests use `provide("sessions", createSessionStore(db))` with in-memory db to test `@Auth` wrapping.
 
 ## Metadata note
 

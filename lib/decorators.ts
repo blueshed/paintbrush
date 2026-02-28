@@ -3,6 +3,7 @@
  *
  * @Resource(path, store, opts?)  — class decorator: declares a data resource
  * @Field(opts?)           — auto-accessor decorator: declares a field
+ * @Auth(role?)            — class/method decorator: requires authentication
  * @GET(path) etc.         — method decorators: custom route endpoints
  * buildRoutes(...classes) — reads metadata, returns Bun.serve() route object
  *
@@ -12,6 +13,7 @@
 
 import type { Store } from "./stores";
 import { tryInject } from "./shared";
+import type { SessionStore } from "./sessions";
 
 // ── Metadata ──
 
@@ -37,12 +39,15 @@ interface RouteMeta {
   method: string;
   path: string;
   handler: Function;
+  methodName: string;
+  auth?: { role?: string };
 }
 
 interface ClassMeta {
   resource?: ResourceMeta;
   fields: FieldMeta[];
   routes: RouteMeta[];
+  auth?: { role?: string };
 }
 
 function getMeta(context: DecoratorMetadataObject): ClassMeta {
@@ -82,8 +87,37 @@ export function Resource(basePath: string, store: Store<any>, opts?: { notify?: 
   ): void {
     const meta = getMeta(context.metadata);
     meta.resource = { basePath, store, notify: opts?.notify };
-    // Attach metadata to class since Bun doesn't auto-set Symbol.metadata
     (target as any)[META] = meta;
+  };
+}
+
+// ── @Auth decorator ──
+
+/**
+ * Protects routes by role. Works on classes or methods.
+ *
+ * On a class: protects all CRUD routes and custom endpoints.
+ * On a method: protects that single endpoint (overrides class-level).
+ * No role argument = any authenticated user.
+ *
+ *   @Auth("admin")
+ *   @Resource("/api/gifts", sqliteStore("gifts"))
+ *   class Gift { ... }
+ */
+export function Auth(role?: string) {
+  // Returns a decorator that works on both classes and methods
+  return function (target: any, context: ClassDecoratorContext | ClassMethodDecoratorContext): void {
+    if (context.kind === "class") {
+      getMeta(context.metadata).auth = { role };
+      // Also attach metadata to class (same as @Resource/@Controller)
+      (target as any)[META] = getMeta(context.metadata);
+    } else if (context.kind === "method") {
+      // Find the route entry for this method and tag it
+      // The route may not exist yet if @Auth is applied before @GET,
+      // so we store it on metadata keyed by method name for later pickup
+      const meta = getMeta(context.metadata);
+      (meta as any)[`_auth_${String(context.name)}`] = { role };
+    }
   };
 }
 
@@ -94,7 +128,8 @@ function routeDecorator(method: string, path: string) {
     target: (this: This, req: any) => Response | Promise<Response>,
     context: ClassMethodDecoratorContext<This>,
   ): void {
-    getMeta(context.metadata).routes.push({ method, path, handler: target });
+    const meta = getMeta(context.metadata);
+    meta.routes.push({ method, path, handler: target, methodName: String(context.name) });
   };
 }
 
@@ -103,7 +138,7 @@ export function POST(path: string) { return routeDecorator("POST", path); }
 export function PUT(path: string) { return routeDecorator("PUT", path); }
 export function DELETE(path: string) { return routeDecorator("DELETE", path); }
 
-// ── Attach metadata for non-@Resource classes (e.g. custom route controllers) ──
+// ── @Controller ──
 
 function ensureMeta<T extends new (...args: any[]) => any>(
   target: T,
@@ -112,12 +147,29 @@ function ensureMeta<T extends new (...args: any[]) => any>(
   (target as any)[META] = getMeta(context.metadata);
 }
 
-/** Class decorator to attach route metadata for controllers without @Resource */
 export function Controller(
   target: new (...args: any[]) => any,
   context: ClassDecoratorContext,
 ): void {
   ensureMeta(target, context);
+}
+
+// ── Auth wrapper ──
+
+function wrapWithAuth(handler: RouteHandler, role?: string): RouteHandler {
+  return async (req: any) => {
+    const sessions = tryInject<SessionStore>("sessions");
+    if (!sessions) return Response.json({ error: "Auth not configured" }, { status: 500 });
+    const session = await sessions.fromRequest(req);
+    if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (role && session.role !== role) return Response.json({ error: "Forbidden" }, { status: 403 });
+    req.session = session;
+    return handler(req);
+  };
+}
+
+function maybeWrap(handler: RouteHandler, auth?: { role?: string }): RouteHandler {
+  return auth ? wrapWithAuth(handler, auth.role) : handler;
 }
 
 // ── buildRoutes ──
@@ -126,6 +178,8 @@ export function Controller(
  * Reads decorator metadata from classes and returns a plain route object
  * for Bun.serve(). Handles both @Resource classes (CRUD) and classes
  * with @GET/@POST etc. method decorators (custom endpoints).
+ *
+ * If @Auth is present, handlers are wrapped with session checks.
  */
 export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteObject {
   const routes: RouteObject = {};
@@ -133,6 +187,8 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
   for (const cls of classes) {
     const meta = (cls as any)[META] as ClassMeta | undefined;
     if (!meta) continue;
+
+    const classAuth = meta.auth;
 
     // Resource CRUD routes
     if (meta.resource) {
@@ -145,10 +201,10 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
       );
 
       routes[basePath] = {
-        async GET() {
+        GET: maybeWrap(async () => {
           return Response.json(await store.read());
-        },
-        async POST(req: Request) {
+        }, classAuth),
+        POST: maybeWrap(async (req: Request) => {
           const body = await req.json();
           for (const field of requiredFields) {
             if (!body[field]) {
@@ -165,18 +221,18 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
             server.publish(notify, JSON.stringify({ resource: notify, action: "create", item }));
           }
           return Response.json(item, { status: 201 });
-        },
+        }, classAuth),
       };
 
       routes[`${basePath}/:id`] = {
-        async GET(req: any) {
+        GET: maybeWrap(async (req: any) => {
           const items = await store.read();
           const item = items.find((i: any) => i.id === req.params.id);
           return item
             ? Response.json(item)
             : Response.json({ error: "Not found" }, { status: 404 });
-        },
-        async PUT(req: any) {
+        }, classAuth),
+        PUT: maybeWrap(async (req: any) => {
           const items = await store.read();
           const idx = items.findIndex((i: any) => i.id === req.params.id);
           if (idx === -1) return Response.json({ error: "Not found" }, { status: 404 });
@@ -189,8 +245,8 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
             server.publish(notify, JSON.stringify({ resource: notify, action: "update", id: req.params.id, fields: body }));
           }
           return Response.json(items[idx]);
-        },
-        async DELETE(req: any) {
+        }, classAuth),
+        DELETE: maybeWrap(async (req: any) => {
           const items = await store.read();
           const filtered = items.filter((i: any) => i.id !== req.params.id);
           if (filtered.length === items.length) {
@@ -202,7 +258,7 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
             server.publish(notify, JSON.stringify({ resource: notify, action: "delete", id: req.params.id }));
           }
           return new Response(null, { status: 204 });
-        },
+        }, classAuth),
       };
     }
 
@@ -211,7 +267,10 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
       const instance = new cls();
       for (const route of meta.routes) {
         routes[route.path] ??= {};
-        routes[route.path][route.method] = route.handler.bind(instance);
+        // Method-level auth (from _auth_ keys) overrides class-level; fall back to class auth
+        const methodAuth = (meta as any)[`_auth_${route.methodName}`] as { role?: string } | undefined;
+        const auth = methodAuth ?? classAuth;
+        routes[route.path][route.method] = maybeWrap(route.handler.bind(instance), auth);
       }
     }
   }
