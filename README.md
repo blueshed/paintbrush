@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" alt="Paintbrush" width="200" />
+</p>
+
 # Paintbrush
 
 A decorator-based resource framework for [Bun](https://bun.sh). Define a class, get CRUD routes, real-time sync, and a reactive client — no dependencies beyond Bun.
