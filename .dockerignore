@@ -1,0 +1,9 @@
+node_modules
+data
+docs
+.git
+.claude
+.DS_Store
+.env
+*.test.ts
+*.tmp.*

@@ -14,7 +14,7 @@ mkdirSync(dirname(dbPath), { recursive: true });
 provide("db", createDatabase(dbPath));
 
 const server = Bun.serve({
-  port: process.env.PORT || 3001,
+  port: process.env.PORT || 3000,
   hostname: "0.0.0.0",
   routes: {
     "/": homepage,
