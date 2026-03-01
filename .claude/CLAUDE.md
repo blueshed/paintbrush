@@ -4,19 +4,42 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 
 ## Commands
 
-- `bun dev` — start server with hot reload
-- `bun test` — run tests (77 tests across 8 files, ~100ms)
+- `bun run demo` — run the full demo app
+- `bun run zero` — run the minimal starter
+- `bun dev` — run the initialized project (after `/init-paint`)
+- `bun test` — run tests
 - `bunx tsc --noEmit` — type-check
+- `/init-paint` — skill: initialize root app files from zero/ or demo/
 - `/add-resource` — skill: scaffolds a new resource (all files + wiring)
 
-## Folder structure
+## Project layout (after `/init-paint`)
 
-- `server.ts` — Bun.serve() entry: routes, WebSocket upgrade, imports resource classes. No fetch handler.
-- `app.ts` — client: shared WebSocket, hash router, view dispatch. Purely imports + wiring.
-- `index.html` — HTML shell (Bun bundles app.ts via HTMLBundle)
-- `styles.css` — all styles
-- `bunfig.toml` — test config (`root = "."` for recursive test discovery)
-- `docs/` — reference docs: `railway.md` (deployment), `auth.md` (sessions, tokens, TOTP), `cqrs.md` (document pattern)
+```
+server.ts          — Bun.serve() entry: routes, imports resource classes
+app.ts             — client: hash router, view dispatch
+index.html         — HTML shell (Bun bundles app.ts via HTMLBundle)
+styles.css         — all styles
+resources/         — one subfolder per resource
+  home-view.ts     — home page with nav links
+  {name}s/         — resource subfolder (created by /add-resource)
+    {name}s-api.ts — @Resource + @Field class
+    {name}s.ts     — client fetch wrappers
+    {name}s-views.ts — list + detail views
+lib/               — framework (do not edit)
+demo/              — full demo app (reference)
+zero/              — minimal starter (reference)
+docs/              — reference docs
+```
+
+## Template layout (before `/init-paint`)
+
+- `demo/` — full demo app (notes, todos, checklists, admin):
+  - `server.ts`, `app.ts`, `index.html`, `styles.css`
+  - `resources/` — demo resources (mirrors project layout)
+    - `home-view.ts`, `notes/`, `todos/`, `checklists/`, `admin/`
+- `zero/` — minimal starter (single editable message):
+  - `server.ts`, `app.ts`, `index.html`, `styles.css`
+  - `resources/` — `message-api.ts`, `message.json`
 - `lib/` — framework internals:
   - `decorators.ts` — `@Resource`, `@Field`, `@Auth`, `@Controller`, `@GET`/`@POST`/`@PUT`/`@DELETE`, `buildRoutes()`
   - `auth.ts` — re-exports `@Auth` from decorators
@@ -28,18 +51,14 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
   - `shared.ts` — `provide`/`inject`/`tryInject` named resource registry
   - `signals.ts` — `Signal`, `routes()` hash router, `navigate()`
   - `utils.ts` — `esc()` HTML escaping, `notFoundView()`
-- `resources/` — one subfolder per resource:
-  - `notes/` — `notes-api.ts`, `notes.ts`, `notes-views.ts`, `notes.json`
-  - `todos/` — `todos-api.ts`, `todos.ts`, `todos-views.ts`, `todos.json`
-  - `checklists/` — `checklists-api.ts`, `checklists.ts`, `checklists-views.ts`
-  - `admin/` — `admin-api.ts`, `admin-api.test.ts`, `admin-views.ts`
-  - `home-view.ts` — home page with nav links
+  - `reconnecting-ws.ts` — auto-reconnecting WebSocket with resubscribe
+- `docs/` — reference docs: `railway.md` (deployment), `auth.md` (sessions, tokens, TOTP), `cqrs.md` (document pattern)
 
 ## Key patterns
 
-- **Resource class** (`resources/*/\*-api.ts`): `@Resource` + `@Field` decorators define CRUD + validation + defaults
-- **Client wrappers** (`resources/*/*.ts`): typed fetch functions + optional `connect{Name}(ws)` live signal store
-- **Views** (`resources/*/*-views.ts`): render functions that return `Dispose | void`
+- **Resource class** (`{name}s-api.ts`): `@Resource` + `@Field` decorators define CRUD + validation + defaults
+- **Client wrappers** (`{name}s.ts`): typed fetch functions + optional `connect{Name}(ws)` live signal store
+- **Views** (`{name}s-views.ts`): render functions that return `Dispose | void`
 - **Store interface**: `{ read(): Promise<T[]>, write(items: T[]): Promise<void> }` — `jsonFile()` for JSON files, `memoryStore()` for tests, `sqliteStore()` for SQLite
 - **GranularStore**: extends Store with `insert`, `update`, `remove`, `findById` — `buildRoutes()` uses these when available
 - **Shared registry** (`lib/shared.ts`): `provide(name, value)` to register, `inject<T>(name)` to retrieve (throws), `tryInject<T>(name)` for optional lookup
@@ -62,13 +81,13 @@ Decorator-based routes and resources for Bun. TC39 stage-3 decorators.
 - `jsonFile(path)` — read/write JSON array to file. Used by notes, todos.
 - `memoryStore(initial?)` — in-memory, for tests.
 - `sqliteStore(table)` — lazy factory: defers `inject("db")` until first request. Used by checklists.
-- `createDatabase(path)` — creates SQLite connection with WAL mode, write queue, backup/restore. Called in server.ts, registered via `provide("db", ...)`.
+- `createDatabase(path)` — creates SQLite connection with WAL mode, write queue, backup/restore. Called in demo/server.ts, registered via `provide("db", ...)`.
 
 ## Authentication
 
 Sessions, tokens, and TOTP modules live in `lib/` but are not used by the demo resources. See [`docs/auth.md`](../docs/auth.md) for full API reference. The `@Auth` decorator is documented above in Decorators.
 
-## Server bootstrap
+## Server bootstrap (demo)
 
 ```
 provide("db", createDatabase(dbPath))  →  Bun.serve({ routes: { ... } })  →  provide("server", server)
@@ -82,7 +101,7 @@ Resources use `sqliteStore(table)` at decoration time (lazy — no db access unt
 
 Client sends `{ action: "opendoc"|"closedoc", resource: "topic" }`. Server subscribes/unsubscribes via Bun pub/sub. Server publishes `{ resource, action: "create"|"update"|"delete", ... }` after writes for resources with `notify` set. Topics are whitelisted from decorator metadata.
 
-## Admin controller
+## Admin controller (demo)
 
 `@Controller` class with custom endpoints:
 - `GET /api/stats` — health/stats check

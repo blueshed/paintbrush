@@ -1,6 +1,6 @@
-import { routes } from "./lib/signals";
-import { reconnectingWebSocket } from "./lib/reconnecting-ws";
-import { notFoundView } from "./lib/utils";
+import { routes } from "../lib/signals";
+import { reconnectingWebSocket } from "../lib/reconnecting-ws";
+import { notFoundView } from "../lib/utils";
 import { homeView } from "./resources/home-view";
 import { noteListView, noteDetailView } from "./resources/notes/notes-views";
 import { todoListView, todoDetailView } from "./resources/todos/todos-views";

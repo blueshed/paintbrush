@@ -1,4 +1,4 @@
-import { Signal, signal, batch, type Dispose } from "../../lib/signals";
+import { Signal, signal, batch, type Dispose } from "../../../lib/signals";
 import type { Checklist } from "./checklists-api";
 
 export type { Checklist };

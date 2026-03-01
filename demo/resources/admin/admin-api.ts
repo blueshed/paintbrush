@@ -1,6 +1,6 @@
-import { Controller, GET, POST } from "../../lib/decorators";
-import { inject } from "../../lib/shared";
-import type { DatabaseInstance } from "../../lib/sqlite-store";
+import { Controller, GET, POST } from "../../../lib/decorators";
+import { inject } from "../../../lib/shared";
+import type { DatabaseInstance } from "../../../lib/sqlite-store";
 
 @Controller
 export class Admin {

@@ -1,5 +1,5 @@
-import { navigate, effect, type Dispose } from "../../lib/signals";
-import { esc } from "../../lib/utils";
+import { navigate, effect, type Dispose } from "../../../lib/signals";
+import { esc } from "../../../lib/utils";
 import { connectChecklists, createChecklist, saveChecklist, deleteChecklist, loadChecklist } from "./checklists";
 import type { Checklist } from "./checklists";
 

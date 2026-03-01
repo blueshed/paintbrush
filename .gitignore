@@ -5,3 +5,4 @@ bun.lock
 .env
 .DS_Store
 data/
+demo/data/

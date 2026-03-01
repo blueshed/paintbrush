@@ -1,4 +1,4 @@
-import { navigate } from "../../lib/signals";
+import { navigate } from "../../../lib/signals";
 
 export function adminView(root: HTMLElement): void {
   root.innerHTML = `

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+  <defs>
+    <linearGradient id="woodGrain" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5A2B" />
+      <stop offset="20%" stop-color="#A07040" />
+      <stop offset="50%" stop-color="#6F4E37" />
+      <stop offset="80%" stop-color="#A07040" />
+      <stop offset="100%" stop-color="#8B5A2B" />
+    </linearGradient>
+
+    <linearGradient id="metalBand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#777" />
+      <stop offset="30%" stop-color="#CCC" />
+      <stop offset="50%" stop-color="#EEE" />
+      <stop offset="70%" stop-color="#AAA" />
+      <stop offset="100%" stop-color="#666" />
+    </linearGradient>
+
+    <linearGradient id="flatBristles" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#C2B280" />
+      <stop offset="100%" stop-color="#EEDC82" />
+    </linearGradient>
+
+    <radialGradient id="gloop" cx="30%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#00C9FF" />
+      <stop offset="70%" stop-color="#0078D7" />
+      <stop offset="100%" stop-color="#005EA8" />
+    </radialGradient>
+
+    <linearGradient id="wetShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="depthShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="4" dy="8" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#depthShadow)">
+     <path d="M 180 180 Q 100 80 20 20" stroke="url(#gloop)" stroke-width="20" fill="none" stroke-linecap="round" />
+     <path d="M 200 160 Q 120 60 50 10" stroke="url(#gloop)" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.8"/>
+
+    <circle cx="40" cy="60" r="12" fill="url(#gloop)" />
+    <circle cx="80" cy="30" r="8" fill="url(#gloop)" />
+    <circle cx="120" cy="90" r="15" fill="url(#gloop)" />
+    <circle cx="25" cy="100" r="6" fill="url(#gloop)" />
+    <circle cx="160" cy="50" r="9" fill="url(#gloop)" />
+
+    <path d="M 115 85 Q 120 80 125 85" stroke="white" stroke-width="3" opacity="0.7" fill="none"/>
+    <circle cx="35" cy="55" r="4" fill="white" opacity="0.7"/>
+  </g>
+
+  <g transform="rotate(-45 300 300)" filter="url(#depthShadow)">
+
+    <rect x="250" y="320" width="100" height="240" rx="15" fill="url(#woodGrain)" />
+    <path d="M 260 320 L 260 550 Q 300 570 340 550 L 340 320" fill="none" stroke="#543210" stroke-width="2" opacity="0.3"/>
+
+    <rect x="240" y="250" width="120" height="80" rx="5" fill="url(#metalBand)" stroke="#555" stroke-width="2"/>
+    <line x1="245" y1="270" x2="355" y2="270" stroke="#444" stroke-width="1"/>
+    <line x1="245" y1="290" x2="355" y2="290" stroke="#444" stroke-width="1"/>
+    <circle cx="260" cy="305" r="4" fill="#444" opacity="0.5"/>
+    <circle cx="340" cy="305" r="4" fill="#444" opacity="0.5"/>
+
+    <rect x="245" y="130" width="110" height="125" fill="url(#flatBristles)" />
+    <g stroke="#8B7E60" stroke-width="1">
+        <line x1="255" y1="250" x2="255" y2="140"/>
+        <line x1="275" y1="250" x2="275" y2="135"/>
+        <line x1="300" y1="250" x2="300" y2="140"/>
+        <line x1="325" y1="250" x2="325" y2="135"/>
+        <line x1="345" y1="250" x2="345" y2="140"/>
+    </g>
+
+    <path d="M 240 260
+             L 242 150
+             Q 250 120 265 160
+             Q 280 200 290 150
+             Q 300 100 315 160
+             Q 330 210 340 150
+             L 358 150
+             L 360 260
+             Z" fill="url(#gloop)" stroke="#005EA8" stroke-width="2"/>
+
+    <path d="M 275 170 Q 290 240 305 170" fill="url(#gloop)" />
+
+    <path d="M 250 150 Q 260 130 270 150" stroke="url(#wetShine)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M 290 140 Q 300 120 310 140" stroke="url(#wetShine)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M 330 150 Q 340 130 350 150" stroke="url(#wetShine)" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M 245 255 L 355 255" stroke="url(#wetShine)" stroke-width="6" opacity="0.5" stroke-linecap="round"/>
+
+  </g>
+</svg>

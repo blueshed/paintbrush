@@ -7,16 +7,25 @@ Ask the user for:
 3. **Real-time?** — should it have WebSocket live updates (`notify`) or be REST-only?
 4. **Storage** — `sqlite` (default) or `json` file?
 
+Detect the target automatically: if root `resources/` exists (post `/init-paint`), add there with `../../lib/` imports. Otherwise ask which app (`demo/` or `zero/`) and use `../../../lib/` imports.
+
 Then create all files using the patterns below. Use the resource name throughout (lowercase for files/paths, PascalCase for the class). Each resource gets its own subfolder under `resources/`.
+
+The target directory depends on context:
+- **After `/init-paint`**: files go under root `resources/`, imports use `../../lib/`
+- **`demo/`**: files go under `demo/resources/`, imports use `../../../lib/`
+- **`zero/`**: files go under `zero/resources/`, imports use `../../../lib/`
+
+Use `{base}` below to mean the app root (`./`, `demo/`, or `zero/`), and `{lib}` for the correct relative path to `lib/`.
 
 ## Files to create
 
-### 1. `resources/{name}s/{name}s-api.ts` — Resource class
+### 1. `{base}/resources/{name}s/{name}s-api.ts` — Resource class
 
 For SQLite storage:
 ```ts
-import { Resource, Field } from "../../lib/decorators";
-import { sqliteStore } from "../../lib/sqlite-store";
+import { Resource, Field } from "{lib}/decorators";
+import { sqliteStore } from "{lib}/sqlite-store";
 
 @Resource("/api/{name}s", sqliteStore("{name}s"), { notify: "{name}s" })
 // Omit the third argument if REST-only (no real-time)
@@ -30,8 +39,8 @@ export class {Name} {
 
 For JSON file storage:
 ```ts
-import { Resource, Field } from "../../lib/decorators";
-import { jsonFile } from "../../lib/stores";
+import { Resource, Field } from "{lib}/decorators";
+import { jsonFile } from "{lib}/stores";
 
 @Resource("/api/{name}s", jsonFile(import.meta.dir + "/{name}s.json"), { notify: "{name}s" })
 // Omit the third argument if REST-only (no real-time)
@@ -42,9 +51,9 @@ export class {Name} {
 }
 ```
 
-### 2. `resources/{name}s/{name}s.ts` — Client wrappers
+### 2. `{base}/resources/{name}s/{name}s.ts` — Client wrappers
 
-Follow the pattern in `resources/notes/notes.ts` for REST-only, or `resources/todos/todos.ts` for real-time. Include:
+Follow the pattern in `demo/resources/notes/notes.ts` for REST-only, or `demo/resources/todos/todos.ts` for real-time. Include:
 - `load{Name}s()` — GET list
 - `load{Name}(id)` — GET by id
 - `create{Name}(data)` — POST
@@ -52,16 +61,16 @@ Follow the pattern in `resources/notes/notes.ts` for REST-only, or `resources/to
 - `delete{Name}(id)` — DELETE
 - If real-time: `connect{Name}s(ws)` — returns `{ {name}s: Signal<Map<string, Signal<{Name}>>>, dispose }`
 
-### 3. `resources/{name}s/{name}s-views.ts` — Views
+### 3. `{base}/resources/{name}s/{name}s-views.ts` — Views
 
-Follow the pattern in `resources/notes/notes-views.ts` for REST-only, or `resources/todos/todos-views.ts` for real-time. Include:
+Follow the pattern in `demo/resources/notes/notes-views.ts` for REST-only, or `demo/resources/todos/todos-views.ts` for real-time. Include:
 - `{name}ListView(root, ws?)` — list view with create button
 - `{name}DetailView(root, id)` — edit form with autosave and delete
 - Cancelled guards on async views
 - Event delegation on lists
 - `esc()` on all user content and attribute values
 
-### 4. `resources/{name}s/{name}s.json` — Empty data file (JSON storage only)
+### 4. `{base}/resources/{name}s/{name}s.json` — Empty data file (JSON storage only)
 
 ```json
 []
@@ -69,15 +78,27 @@ Follow the pattern in `resources/notes/notes-views.ts` for REST-only, or `resour
 
 ## Files to modify
 
-### 5. `server.ts` — Register the resource
+### 5. `{base}/server.ts` — Register the resource
 
 ```ts
 import { {Name} } from "./resources/{name}s/{name}s-api";
 // Add to buildRoutes:
-...buildRoutes(Note, Todo, Checklist, {Name}, Admin),
+...buildRoutes(...existing, {Name}),
 ```
 
-### 6. `app.ts` — Add client routes
+If using SQLite and the app doesn't already have a database, add:
+```ts
+import { mkdirSync } from "fs";
+import { dirname } from "path";
+import { provide } from "{lib}/shared";
+import { createDatabase } from "{lib}/sqlite-store";
+
+const dbPath = process.env.DB_PATH ?? "./{base}/data/app.db";
+mkdirSync(dirname(dbPath), { recursive: true });
+provide("db", createDatabase(dbPath));
+```
+
+### 6. `{base}/app.ts` — Add client routes
 
 ```ts
 import { {name}ListView, {name}DetailView } from "./resources/{name}s/{name}s-views";
@@ -86,7 +107,7 @@ import { {name}ListView, {name}DetailView } from "./resources/{name}s/{name}s-vi
 "/{name}s/:id": ({ id }) => {name}DetailView(app, id),
 ```
 
-### 7. `resources/home-view.ts` — Add nav item
+### 7. `{base}/resources/home-view.ts` — Add nav item (if exists)
 
 ```ts
 <li class="nav-item" id="go-{name}s">{Name}s</li>

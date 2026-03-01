@@ -25,12 +25,20 @@ Requires [Bun](https://bun.sh) 1.3.10+ (TC39 stage-3 decorator support).
 ```sh
 bun create blueshed/paintbrush myapp
 cd myapp
-bun dev
 ```
 
-Open two browser tabs to `http://localhost:3000/#/todos`. Create a todo in one tab — it appears live in the other.
+This runs `bun zero` — the minimal starter with a single editable message. Two starter apps are included:
 
-Using [Claude Code](https://claude.com/claude-code)? Type `/add-resource` to scaffold a new resource with all files and wiring.
+| Command | What it runs |
+|---|---|
+| `bun run zero` | Minimal app — one editable JSON message, no database |
+| `bun run demo` | Full app — notes, todos, checklists, admin, SQLite, real-time sync |
+
+Try the demo: run `bun run demo`, then open two tabs to `http://localhost:3000/#/todos`. Create a todo in one — it appears live in the other.
+
+### Building your own app
+
+Using [Claude Code](https://claude.com/claude-code)? Type `/init-paint` to set up root-level app files from either starter, then `/add-resource` to scaffold resources with all files and wiring. After init, use `bun dev` to run your app.
 
 ## What it does
 
@@ -56,6 +64,7 @@ Resources without `notify` (like Notes) are REST-only. The server validates topi
 |---|---|---|
 | `@Resource(path, store, opts?)` | class | Declares a CRUD resource. `opts.notify` enables WebSocket broadcasts. |
 | `@Field(opts?)` | auto-accessor | Declares a field. `required: true` validates on POST. `readonly: true` strips from PUT. |
+| `@Auth(role?)` | class/method | Requires authentication. Optional role check. |
 | `@Controller` | class | Attaches route metadata for non-resource classes. |
 | `@GET(path)` | method | Custom endpoint. Also `@POST`, `@PUT`, `@DELETE`. |
 
@@ -68,37 +77,44 @@ interface Store<T extends { id: string }> {
 }
 ```
 
-`jsonFile(path)` ships as the default. The interface is two methods — implement it for SQLite, Postgres, S3, whatever. The resource class doesn't know or care.
+Three built-in stores: `jsonFile(path)` for JSON files, `sqliteStore(table)` for SQLite (with WAL mode, write queue, backup/restore), and `memoryStore()` for tests. The interface is two methods — implement it for Postgres, S3, whatever. The resource class doesn't know or care.
 
 ## Adding a resource
 
-1. **Define the class** in `resources/things-api.ts` with `@Resource` and `@Field`
-2. **Create client wrappers** in `resources/things.ts` (typed fetch functions, optionally a `connectThings(ws)` live store)
-3. **Create views** in `resources/things-views.ts`
-4. **Create** `resources/things.json` with `[]`
-5. **Register** in `server.ts`: add to `buildRoutes(Note, Todo, Thing, Stats)`
+1. **Define the class** in `resources/things/things-api.ts` with `@Resource` and `@Field`
+2. **Create client wrappers** in `resources/things/things.ts` (typed fetch functions, optionally a `connectThings(ws)` live store)
+3. **Create views** in `resources/things/things-views.ts`
+4. **Create** `resources/things/things.json` with `[]` (for JSON storage)
+5. **Register** in `server.ts`: add to `buildRoutes(Note, Todo, Thing)`
 6. **Add routes** in `app.ts`: add entries to the hash router
+
+Or use `/add-resource` in Claude Code to generate all files and wiring automatically.
 
 ## Project structure
 
+After `/init-paint`, your project looks like this:
+
 ```
-paintbrush/
-  server.ts              Entry point: Bun.serve(), WebSocket upgrade
-  app.ts                 Client: shared WebSocket, hash router
-  index.html             HTML shell (Bun bundles app.ts)
-  styles.css
-  lib/
-    decorators.ts        @Resource, @Field, @Controller, @GET, buildRoutes
-    stores.ts            Store interface, jsonFile(), memoryStore()
-    signals.ts           signal, effect, computed, batch, routes, navigate
-    utils.ts             esc() HTML escaping
-  resources/
-    todos-api.ts         Todo resource (with notify)
-    todos.ts             Client wrappers + connectTodos() live store
-    todos-views.ts       Todo list (signal-driven) + detail view
-    notes-api.ts         Note resource (REST-only, no notify)
-    notes.ts             Client wrappers
-    notes-views.ts       Note list + detail view
+server.ts              Entry point: Bun.serve(), WebSocket upgrade
+app.ts                 Client: shared WebSocket, hash router
+index.html             HTML shell (Bun bundles app.ts)
+styles.css
+resources/
+  home-view.ts         Home page with nav links
+  things/
+    things-api.ts      @Resource + @Field class
+    things.ts          Client fetch wrappers + live store
+    things-views.ts    List + detail views
+lib/                   Framework (do not edit)
+  decorators.ts        @Resource, @Field, @Controller, @GET, buildRoutes
+  stores.ts            Store interface, jsonFile(), memoryStore()
+  sqlite-store.ts      sqliteStore(), createDatabase(), backup/restore
+  signals.ts           Signal, routes(), navigate()
+  utils.ts             esc() HTML escaping
+  reconnecting-ws.ts   Auto-reconnecting WebSocket
+demo/                  Full demo app (reference)
+zero/                  Minimal starter (reference)
+docs/                  Reference docs
 ```
 
 ## Tests
@@ -107,7 +123,7 @@ paintbrush/
 bun test
 ```
 
-25 tests, ~15ms. Tests call `buildRoutes()` directly with `memoryStore()` and mock `Request` objects — no server needed.
+77 tests across 8 files, ~100ms. Tests call `buildRoutes()` directly with `memoryStore()` and mock `Request` objects — no server needed.
 
 ## Design decisions
 
@@ -116,12 +132,6 @@ bun test
 - **No framework dependency.** The signal system is ~150 lines. The decorator system is ~215 lines.
 - **REST stays the write path.** WebSocket is notification-only. Clients write via fetch, receive updates via pub/sub. No conflict resolution needed.
 - **Subscribe after load.** The client populates initial state from REST before subscribing to WebSocket updates, preventing race conditions.
-
-## Not yet implemented
-
-- WebSocket reconnect on disconnect
-- Authentication / permissions
-- Store atomicity (jsonFile is demo-grade)
 
 ## License
 

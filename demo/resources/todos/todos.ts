@@ -1,4 +1,4 @@
-import { Signal, signal, batch, type Dispose } from "../../lib/signals";
+import { Signal, signal, batch, type Dispose } from "../../../lib/signals";
 import type { Todo } from "./todos-api";
 
 export type { Todo };

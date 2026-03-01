@@ -1,5 +1,5 @@
-import { navigate, effect, type Dispose } from "../../lib/signals";
-import { esc } from "../../lib/utils";
+import { navigate, effect, type Dispose } from "../../../lib/signals";
+import { esc } from "../../../lib/utils";
 import { connectTodos, createTodo, saveTodo, deleteTodo, loadTodo } from "./todos";
 import type { Todo } from "./todos";
 

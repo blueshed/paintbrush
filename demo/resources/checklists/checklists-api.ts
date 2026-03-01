@@ -1,5 +1,5 @@
-import { Resource, Field } from "../../lib/decorators";
-import { sqliteStore } from "../../lib/sqlite-store";
+import { Resource, Field } from "../../../lib/decorators";
+import { sqliteStore } from "../../../lib/sqlite-store";
 
 @Resource("/api/checklists", sqliteStore("checklists"), { notify: "checklists" })
 export class Checklist {

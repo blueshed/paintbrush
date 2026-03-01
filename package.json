@@ -1,11 +1,13 @@
 {
   "name": "paintbrush",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {
-    "dev": "bun --hot server.ts"
+    "dev": "bun --hot server.ts",
+    "demo": "bun --hot demo/server.ts",
+    "zero": "bun --hot zero/server.ts"
   },
   "bun-create": {
-    "start": "bun dev"
+    "start": "bun zero"
   },
   "engines": {
     "bun": ">=1.3.10"

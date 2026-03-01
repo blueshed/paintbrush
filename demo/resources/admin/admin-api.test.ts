@@ -1,7 +1,7 @@
 import { describe, test, expect, afterEach } from "bun:test";
-import { buildRoutes } from "../../lib/decorators";
-import { provide } from "../../lib/shared";
-import { createDatabase } from "../../lib/sqlite-store";
+import { buildRoutes } from "../../../lib/decorators";
+import { provide } from "../../../lib/shared";
+import { createDatabase } from "../../../lib/sqlite-store";
 import { Admin } from "./admin-api";
 import { unlinkSync } from "fs";
 

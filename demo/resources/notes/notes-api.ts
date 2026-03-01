@@ -1,5 +1,5 @@
-import { Resource, Field } from "../../lib/decorators";
-import { jsonFile } from "../../lib/stores";
+import { Resource, Field } from "../../../lib/decorators";
+import { jsonFile } from "../../../lib/stores";
 
 @Resource("/api/notes", jsonFile(import.meta.dir + "/notes.json"))
 export class Note {
