@@ -1,5 +1,5 @@
 import homepage from "./index.html";
-import { getMessage, putMessage } from "./resources/message-api";
+import { getMessage, putMessage, getStatus } from "./resources/message-api";
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -9,6 +9,9 @@ const server = Bun.serve({
     "/api/message": {
       GET: getMessage,
       PUT: putMessage,
+    },
+    "/api/status": {
+      GET: getStatus,
     },
     "/*": () => Response.json({ error: "Not found" }, { status: 404 }),
   },

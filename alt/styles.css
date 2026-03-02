@@ -41,3 +41,7 @@ input, textarea {
   font-family: inherit;
 }
 textarea { min-height: 120px; resize: vertical; }
+
+.help { font-size: 0.8rem; color: #555; margin-top: 1rem; line-height: 1.6; }
+.help code { background: #e9ecef; padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.75rem; }
+.meta { font-size: 0.7rem; color: #999; margin-top: 0.5rem; }
