@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "bun --hot server.ts",
     "demo": "bun --hot demo/server.ts",
-    "zero": "bun --hot zero/server.ts"
+    "zero": "bun --hot zero/server.ts",
+    "alt": "bun --hot alt/server.ts"
   },
   "bun-create": {
     "start": "bun zero"

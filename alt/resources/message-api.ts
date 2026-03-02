@@ -1,8 +1,14 @@
-import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
 import type { Message } from "./message";
 
-const file = join(import.meta.dir, "message.json");
+const dataDir = process.env.DATA_PATH ?? import.meta.dir;
+const file = join(dataDir, "message.json");
+
+if (!existsSync(file)) {
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify({ message: "Hello from Paintbrush" }, null, 2));
+}
 
 export const getMessage = () =>
   Response.json(JSON.parse(readFileSync(file, "utf-8")) as Message);
