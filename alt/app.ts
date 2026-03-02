@@ -1,5 +1,4 @@
-import type { Message } from "./resources/message";
-import type { Status } from "./resources/message-api";
+import type { Message, Status } from "./resources/message";
 
 const app = document.getElementById("app")!;
 
