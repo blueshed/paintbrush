@@ -1,4 +1,14 @@
-/** Minimal logger — use as wrapper or call directly. */
+/**
+ * Logger — colored, timestamped console output.
+ *
+ * Usage:
+ *   const log = createLogger("[server]");
+ *   log.info("listening on :3000");   // 12:34:56.789 INFO  [server] listening on :3000
+ *   log.warn("slow query");           // yellow
+ *   log.error("connection failed");   // red
+ *
+ *   const handler = loggedRequest("[api]", myHandler);  // wrap a route with access logging
+ */
 
 type Level = "info" | "warn" | "error";
 

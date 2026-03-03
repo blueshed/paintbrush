@@ -1,3 +1,12 @@
+/*
+ * Styles — CSS variables, base components, and touch targets.
+ *
+ * All colors are in :root as variables — they pierce shadow DOM,
+ * so web components inherit the theme automatically.
+ *
+ * Sections: variables → reset & layout → components → touch targets
+ */
+
 :root {
   --bg: #f8f9fa;
   --surface: white;

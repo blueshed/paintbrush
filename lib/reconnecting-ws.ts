@@ -1,4 +1,16 @@
-/** Drop-in reconnecting WebSocket wrapper. Transparent to consumers. */
+/**
+ * Reconnecting WebSocket — drop-in wrapper that auto-reconnects on close.
+ *
+ * Usage:
+ *   const ws = reconnectingWebSocket("ws://localhost:3000/ws");
+ *   ws.addEventListener("message", (e) => console.log(e.data));
+ *   ws.send(JSON.stringify({ action: "opendoc", resource: "notes" }));
+ *
+ * Behavior:
+ *   - Returns an EventTarget proxy that looks like a native WebSocket
+ *   - On disconnect, reconnects with exponential backoff (500ms → 30s)
+ *   - Tracks opendoc/closedoc subscriptions and replays them on reconnect
+ */
 export function reconnectingWebSocket(url: string): WebSocket {
   let ws!: WebSocket;
   const proxy = new EventTarget();

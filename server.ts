@@ -1,3 +1,13 @@
+/**
+ * Server — Bun.serve() with explicit routes and WebSocket hub.
+ *
+ * Every route maps directly to a handler function imported from a resource.
+ * The WebSocket hub subscribes clients to resource topics (opendoc/closedoc)
+ * so server handlers can publish live updates via tryInject("server").
+ *
+ * To add a route: import the handler and add an entry to the routes table.
+ * To add a WS topic: add the resource name to the `topics` set.
+ */
 import homepage from "./index.html";
 import { provide } from "./lib/shared";
 import { getMessage, putMessage } from "./resources/message/message-api";
