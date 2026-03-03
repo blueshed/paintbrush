@@ -8,6 +8,40 @@
  *   computed<T>(fn)         — derive a read-only signal from other signals
  *   effect(fn)              — run a side-effect whenever its dependencies change
  *   batch(fn)               — group multiple updates into a single flush
+ *   route<T>(pattern)       — reactive hash route: Signal<T | null>, null when unmatched
+ *   routes(target, table)   — hash router: maps patterns to handlers, swaps target content
+ *   navigate(path)          — set location.hash programmatically
+ *
+ * Routing:
+ *   route(pattern) returns a Signal that is null when unmatched, or a params object
+ *   when the hash matches. Patterns use :param segments: "/site/:id" extracts { id }.
+ *   All route() calls share one hashchange listener (lazy singleton).
+ *
+ *   routes(target, table) is a declarative router — Bun.serve style:
+ *     routes(app, {
+ *       "/":          () => dashboard(app),
+ *       "/site/:id":  ({ id }) => siteDetail(app, id),
+ *     });
+ *   On hash change, clears target and calls the matching handler with extracted params.
+ *   Returns a dispose function to tear down the effect and listener.
+ *
+ *   Handlers may return a value to control rendering:
+ *     - string:   used as target.innerHTML (markup for the route)
+ *     - function: update callback, called on param change without remount
+ *     - void:     handler manages the DOM itself (e.g. appendChild)
+ *
+ *   Return a string for simple routes:
+ *     routes(app, {
+ *       "/": () => "<x-counter></x-counter>",
+ *     });
+ *
+ *   Return an update callback for routes with params that change without remount:
+ *     routes(app, {
+ *       "/room/:id": ({ id }) => {
+ *         mountChat(app);
+ *         return ({ id }) => selectRoom(id);  // called on param change
+ *       },
+ *     });
  *
  * Signal<T> methods:
  *   .get()                  — read value (tracks dependency when inside effect/computed)
@@ -177,3 +211,102 @@ export function signal<T>(initialValue: T): Signal<T> {
 // === Dispose type ===
 
 export type Dispose = () => void;
+
+// === route() ===
+
+let hashSignal: Signal<string> | null = null;
+
+function getHash(): Signal<string> {
+  if (!hashSignal) {
+    hashSignal = new Signal(location.hash.slice(1) || "/");
+    window.addEventListener("hashchange", () => {
+      hashSignal!.set(location.hash.slice(1) || "/");
+    });
+  }
+  return hashSignal;
+}
+
+export function matchRoute(
+  pattern: string,
+  path: string,
+): Record<string, string> | null {
+  const pp = pattern.split("/");
+  const hp = path.split("/");
+  if (pp.length !== hp.length) return null;
+  const params: Record<string, string> = {};
+  for (let i = 0; i < pp.length; i++) {
+    if (pp[i]!.startsWith(":")) {
+      try {
+        params[pp[i]!.slice(1)] = decodeURIComponent(hp[i]!);
+      } catch {
+        return null;
+      }
+    } else if (pp[i] !== hp[i]) return null;
+  }
+  return params;
+}
+
+export function route<
+  T extends Record<string, string> = Record<string, string>,
+>(pattern: string): Signal<T | null> {
+  const hash = getHash();
+  return computed(() => matchRoute(pattern, hash.get()) as T | null);
+}
+
+export function navigate(path: string): void {
+  location.hash = path;
+}
+
+type RouteHandler = (
+  params: Record<string, string>,
+) => void | string | Dispose;
+
+export function routes(
+  target: HTMLElement,
+  table: Record<string, RouteHandler>,
+): Dispose {
+  const hash = getHash();
+  let activePattern: string | null = null;
+  let activeDispose: Dispose | null = null;
+
+  function teardown() {
+    if (activeDispose) activeDispose();
+    activeDispose = null;
+    activePattern = null;
+    target.innerHTML = "";
+  }
+
+  return effect(() => {
+    const path = hash.get();
+    for (const [pattern, handler] of Object.entries(table)) {
+      const params = matchRoute(pattern, path);
+      if (params) {
+        if (pattern === activePattern) return; // same route, nothing to do
+        teardown();
+        activePattern = pattern;
+        const result = handler(params);
+        if (typeof result === "string") {
+          target.innerHTML = result;
+        } else if (typeof result === "function") {
+          activeDispose = result;
+        }
+        return;
+      }
+    }
+    // No match — try fallback "*" handler, otherwise clear
+    if (table["*"]) {
+      if (activePattern !== "*") {
+        teardown();
+        activePattern = "*";
+        const result = table["*"]({});
+        if (typeof result === "string") {
+          target.innerHTML = result;
+        } else if (typeof result === "function") {
+          activeDispose = result;
+        }
+      }
+      return;
+    }
+    teardown();
+  });
+}

@@ -1,137 +1,67 @@
-<p align="center">
-  <img src="docs/logo.svg" alt="Paintbrush" width="200" />
-</p>
-
 # Paintbrush
 
-A decorator-based resource framework for [Bun](https://bun.sh). Define a class, get CRUD routes, real-time sync, and a reactive client — no dependencies beyond Bun.
-
-```ts
-@Resource("/api/todos", jsonFile("./todos.json"), { notify: "todos" })
-class Todo {
-  @Field({ required: true }) accessor title: string = "";
-  @Field() accessor status: string = "pending";
-  @Field({ readonly: true }) accessor createdAt: string = "";
-  id: string = "";
-}
-```
-
-That class generates five REST endpoints, field validation, default values, and WebSocket broadcasts on every write. The client subscribes with a single function call and gets a signal-per-entity reactive store.
+A starter for building web apps with [Bun](https://bun.sh). Explicit routes, reactive signals, and web components — no build step, no framework dependencies.
 
 ## Quick start
 
-Requires [Bun](https://bun.sh) 1.3.10+ (TC39 stage-3 decorator support).
+Requires [Bun](https://bun.sh) 1.3.10+.
 
 ```sh
 bun create blueshed/paintbrush myapp
 cd myapp
+bun dev
 ```
 
-This runs `bun zero` — the minimal starter with a single editable message. Two starter apps are included:
+Open `http://localhost:3000`. You get a working app with a single editable message, WebSocket live sync, and a reactive UI.
 
-| Command | What it runs |
-|---|---|
-| `bun run zero` | Minimal app — one editable JSON message, no database |
-| `bun run demo` | Full app — notes, todos, checklists, admin, SQLite, real-time sync |
-
-Try the demo: run `bun run demo`, then open two tabs to `http://localhost:3000/#/todos`. Create a todo in one — it appears live in the other.
-
-### Building your own app
-
-Using [Claude Code](https://claude.com/claude-code)? Type `/init-paint` to set up root-level app files from either starter, then `/add-resource` to scaffold resources with all files and wiring. After init, use `bun dev` to run your app.
-
-## What it does
-
-**Server side:** `@Resource` + `@Field` decorators generate a full CRUD API. `buildRoutes()` reads decorator metadata and returns a plain route object for `Bun.serve()`. Resources that opt into `{ notify: "topic" }` publish changes over Bun's built-in pub/sub.
-
-**Client side:** `connectTodos(ws)` returns a `Signal<Map<id, Signal<Todo>>>`. The outer signal tracks list membership. Inner signals track individual fields. DOM updates are surgical — changing a todo's status only touches that one `<li>`.
-
-**WebSocket protocol:** One shared WebSocket, multiplexed with `opendoc`/`closedoc`:
+## What's in the box
 
 ```
-Client → { "action": "opendoc",  "resource": "todos" }
-Client → { "action": "closedoc", "resource": "todos" }
-Server → { "resource": "todos", "action": "create", "item": { ... } }
-Server → { "resource": "todos", "action": "update", "id": "abc", "fields": { ... } }
-Server → { "resource": "todos", "action": "delete", "id": "abc" }
+server.ts          — Bun.serve() with explicit routes and WebSocket handler
+app.ts             — client entry: hash router, provide/inject, toast
+index.html         — HTML shell (Bun auto-bundles the TypeScript)
+styles.css         — minimal CSS with variables and touch targets
+resources/message/ — starter resource (server + client + view)
+lib/               — shared utilities (signals, router, WebSocket, toast)
 ```
 
-Resources without `notify` (like Notes) are REST-only. The server validates topic names against a whitelist built from decorator metadata.
+Each resource is a folder with three files:
 
-## Decorators
+| File | Role |
+|------|------|
+| `{name}-api.ts` | Server handlers — plain functions that return `Response` |
+| `{name}.ts` | Client store — types, signals, fetch wrappers, WebSocket subscription |
+| `{name}-view.ts` | Web component — shadow DOM, reactive rendering via `effect()` |
 
-| Decorator | Target | Purpose |
-|---|---|---|
-| `@Resource(path, store, opts?)` | class | Declares a CRUD resource. `opts.notify` enables WebSocket broadcasts. |
-| `@Field(opts?)` | auto-accessor | Declares a field. `required: true` validates on POST. `readonly: true` strips from PUT. |
-| `@Auth(role?)` | class/method | Requires authentication. Optional role check. |
-| `@Controller` | class | Attaches route metadata for non-resource classes. |
-| `@GET(path)` | method | Custom endpoint. Also `@POST`, `@PUT`, `@DELETE`. |
+## Adding resources
 
-## Store interface
+Using [Claude Code](https://claude.com/claude-code)? Type `/add-resource` to scaffold a new resource with all files and wiring.
 
-```ts
-interface Store<T extends { id: string }> {
-  read(): Promise<T[]>;
-  write(items: T[]): Promise<void>;
-}
-```
+Manually: create a folder under `resources/`, add the three files following the message pattern, then wire the routes in `server.ts` and `app.ts`.
 
-Three built-in stores: `jsonFile(path)` for JSON files, `sqliteStore(table)` for SQLite (with WAL mode, write queue, backup/restore), and `memoryStore()` for tests. The interface is two methods — implement it for Postgres, S3, whatever. The resource class doesn't know or care.
+## How it works
 
-## Adding a resource
+**Server:** Routes map directly to handler functions. No decorators, no metadata, no magic. WebSocket pub/sub notifies clients after mutations.
 
-1. **Define the class** in `resources/things/things-api.ts` with `@Resource` and `@Field`
-2. **Create client wrappers** in `resources/things/things.ts` (typed fetch functions, optionally a `connectThings(ws)` live store)
-3. **Create views** in `resources/things/things-views.ts`
-4. **Create** `resources/things/things.json` with `[]` (for JSON storage)
-5. **Register** in `server.ts`: add to `buildRoutes(Note, Todo, Thing)`
-6. **Add routes** in `app.ts`: add entries to the hash router
+**Client:** Signals provide lightweight reactivity. `effect()` re-renders when dependencies change. Web components use shadow DOM with `adoptedStyleSheets` to inherit global CSS.
 
-Or use `/add-resource` in Claude Code to generate all files and wiring automatically.
+**WebSocket:** One shared connection, multiplexed with `opendoc`/`closedoc` messages. The server whitelists topics in a `Set`.
 
-## Project structure
+## CSS
 
-After `/init-paint`, your project looks like this:
-
-```
-server.ts              Entry point: Bun.serve(), WebSocket upgrade
-app.ts                 Client: shared WebSocket, hash router
-index.html             HTML shell (Bun bundles app.ts)
-styles.css
-resources/
-  home-view.ts         Home page with nav links
-  things/
-    things-api.ts      @Resource + @Field class
-    things.ts          Client fetch wrappers + live store
-    things-views.ts    List + detail views
-lib/                   Framework (do not edit)
-  decorators.ts        @Resource, @Field, @Controller, @GET, buildRoutes
-  stores.ts            Store interface, jsonFile(), memoryStore()
-  sqlite-store.ts      sqliteStore(), createDatabase(), backup/restore
-  signals.ts           Signal, routes(), navigate()
-  utils.ts             esc() HTML escaping
-  reconnecting-ws.ts   Auto-reconnecting WebSocket
-demo/                  Full demo app (reference)
-zero/                  Minimal starter (reference)
-docs/                  Reference docs
-```
-
-## Tests
-
-```sh
-bun test
-```
-
-77 tests across 8 files, ~100ms. Tests call `buildRoutes()` directly with `memoryStore()` and mock `Request` objects — no server needed.
+All colours are CSS custom properties in `:root`. Touch targets scale up on touch devices via `@media (pointer: coarse)`. Run `bun run sample` to see the living style guide.
 
 ## Design decisions
 
-- **TC39 stage-3 decorators**, not legacy/experimental. Bun 1.3.10+ supports them natively.
-- **No virtual DOM.** Signals drive targeted `innerHTML` updates per entity. Event delegation on lists, not per-item listeners.
-- **No framework dependency.** The signal system is ~150 lines. The decorator system is ~215 lines.
-- **REST stays the write path.** WebSocket is notification-only. Clients write via fetch, receive updates via pub/sub. No conflict resolution needed.
-- **Subscribe after load.** The client populates initial state from REST before subscribing to WebSocket updates, preventing race conditions.
+- **No build step.** Bun bundles TypeScript from `index.html` automatically.
+- **No virtual DOM.** Signals drive targeted updates. Web components isolate scope.
+- **No framework dependency.** The signal system is ~180 lines. The router is ~120 lines.
+- **REST is the write path.** WebSocket is notification-only. Clients write via fetch, receive updates via pub/sub.
+- **Explicit over implicit.** Every route and handler is visible in the code. An AI (or a human) can read `server.ts` and know exactly what the app does.
+
+## Built with Claude
+
+This codebase was written with [Claude Code](https://claude.com/claude-code) (Anthropic's Claude Opus). From the signal system and hash router to the resource scaffolding, WebSocket protocol, and deployment config — Claude has been an outstanding collaborator: fast, careful, and genuinely good at thinking through trade-offs before writing code.
 
 ## License
 

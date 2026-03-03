@@ -1,8 +1,8 @@
 node_modules/
-bun.lock
 *.tmp.json
 *.tmp.db*
 .env
 .DS_Store
 data/
 demo/data/
+resources/message/message.json
