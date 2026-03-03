@@ -1,4 +1,5 @@
 import homepage from "./index.html";
+import { join } from "path";
 import { provide } from "./lib/shared";
 import {
   getMessage,
@@ -7,22 +8,28 @@ import {
 } from "./resources/message/message-api";
 
 const topics = new Set(["message"]);
+const serveLogo = () => {
+  const file = Bun.file(join(import.meta.dir, "logo.png"));
+  return new Response(file, { headers: { "Content-Type": file.type } });
+};
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
   hostname: "0.0.0.0",
   routes: {
     "/": homepage,
-    "/ws": (req) => {
-      if (server.upgrade(req)) return;
-      return new Response("Upgrade failed", { status: 400 });
-    },
     "/api/message": {
       GET: getMessage,
       PUT: putMessage,
     },
     "/api/status": {
       GET: getStatus,
+    },
+    "/favicon.ico": serveLogo,
+    "/logo.png": serveLogo,
+    "/ws": (req) => {
+      if (server.upgrade(req)) return;
+      return new Response("Upgrade failed", { status: 400 });
     },
     "/*": () => Response.json({ error: "Not found" }, { status: 404 }),
   },

@@ -1,3 +1,5 @@
+<img src="./logo.png" alt="Logo" style="display: block; margin: 0 auto; width: 120px;">
+
 # Paintbrush
 
 A starter for building web apps with [Bun](https://bun.sh). Explicit routes, reactive signals, and web components — no build step, no framework dependencies.
