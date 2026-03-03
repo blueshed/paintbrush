@@ -1,4 +1,4 @@
-<img src="./logo.png" alt="Logo" style="display: block; margin: 0 auto; width: 120px;">
+<p align="center"><img src="./logo.png" alt="Logo" width="120"></p>
 
 # Paintbrush
 

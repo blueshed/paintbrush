@@ -12,7 +12,7 @@ import type { Status } from "./message";
 const template = document.createElement("template");
 template.innerHTML = `
   <slot name="title">
-    <h1 style="display:flex;justify-content:space-between;align-items:flex-end">
+    <h1 style="display:flex;justify-content:space-between;align-items:baseline">
       <span>Paintbrush</span>
       <img src="/logo.png" alt="" style="height:2rem">
     </h1>
