@@ -1,19 +1,13 @@
-import { signal } from "../../lib/signals";
-import { tryInject } from "../../lib/shared";
+import { signal } from "@lib/signals";
+import { tryInject } from "@lib/shared";
 
 export type Message = { message: string };
-export type Status = { dataPath: string; persistent: boolean; uptime: number; bun: string };
 
 export const message = signal<Message | null>(null);
-export const status = signal<Status | null>(null);
 
 export async function loadMessage() {
-  const [msgRes, statusRes] = await Promise.all([
-    fetch("/api/message"),
-    fetch("/api/status"),
-  ]);
-  message.set(await msgRes.json());
-  status.set(await statusRes.json());
+  const res = await fetch("/api/message");
+  message.set(await res.json());
 }
 
 export async function saveMessage(body: Message) {

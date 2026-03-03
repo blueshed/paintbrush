@@ -1,17 +1,10 @@
 import homepage from "./index.html";
-import { join } from "path";
 import { provide } from "./lib/shared";
-import {
-  getMessage,
-  putMessage,
-  getStatus,
-} from "./resources/message/message-api";
+import { getMessage, putMessage } from "./resources/message/message-api";
+import { getStatus } from "./resources/status/status-api";
+import { getLogo, notFound } from "./resources/common-api";
 
 const topics = new Set(["message"]);
-const serveLogo = () => {
-  const file = Bun.file(join(import.meta.dir, "logo.png"));
-  return new Response(file, { headers: { "Content-Type": file.type } });
-};
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -25,13 +18,13 @@ const server = Bun.serve({
     "/api/status": {
       GET: getStatus,
     },
-    "/favicon.ico": serveLogo,
-    "/logo.png": serveLogo,
+    "/favicon.ico": getLogo,
+    "/logo.png": getLogo,
     "/ws": (req) => {
       if (server.upgrade(req)) return;
       return new Response("Upgrade failed", { status: 400 });
     },
-    "/*": () => Response.json({ error: "Not found" }, { status: 404 }),
+    "/*": notFound,
   },
   websocket: {
     idleTimeout: 60,

@@ -1,12 +1,11 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
-import { tryInject } from "../../lib/shared";
-import { loggedRequest, createLogger } from "../../lib/logger";
-import type { Message, Status } from "./message";
+import { tryInject } from "@lib/shared";
+import { loggedRequest, createLogger } from "@lib/logger";
+import type { Message } from "./message";
 
 const dataDir = process.env.DATA_PATH ?? import.meta.dir;
 const file = join(dataDir, "message.json");
-const startedAt = Date.now();
 const log = createLogger("message");
 
 if (!existsSync(file)) {
@@ -31,14 +30,5 @@ const putMessageImpl = async (req: Request) => {
   return Response.json(body);
 };
 
-const getStatusImpl = () =>
-  Response.json({
-    dataPath: dataDir,
-    persistent: !!process.env.DATA_PATH,
-    uptime: Math.floor((Date.now() - startedAt) / 1000),
-    bun: Bun.version,
-  } satisfies Status);
-
 export const getMessage = loggedRequest("message", getMessageImpl);
 export const putMessage = loggedRequest("message", putMessageImpl);
-export const getStatus = loggedRequest("message", getStatusImpl);

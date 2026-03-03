@@ -1,13 +1,11 @@
-import { effect } from "../../lib/signals";
-import { toast } from "../../lib/toast";
+import { effect } from "@lib/signals";
+import { toast } from "@lib/toast";
 import {
   message,
-  status,
   loadMessage,
   saveMessage,
   connectMessage,
 } from "./message";
-import type { Status } from "./message";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -21,8 +19,9 @@ template.innerHTML = `
   <div class="toolbar">
     <slot name="actions"><button class="primary" part="save">Save</button></slot>
   </div>
-  <slot name="help"></slot>
-  <slot name="meta"></slot>
+  <slot name="help">
+    <p class="help">Edit the message above and hit <strong>Save</strong> to persist it.</p>
+  </slot>
 `;
 
 function adoptDocumentStyles(shadow: ShadowRoot) {
@@ -37,30 +36,6 @@ function adoptDocumentStyles(shadow: ShadowRoot) {
     }
   }
   shadow.adoptedStyleSheets = sheets;
-}
-
-function renderStatus(el: HTMLElement, s: Status) {
-  if (!el.querySelector("[slot=help]")) {
-    const help = document.createElement("p");
-    help.slot = "help";
-    help.className = "help";
-    help.innerHTML = `
-      Edit the message above and hit <strong>Save</strong> to persist it.
-      Your data is stored at <code>${s.dataPath}</code>
-      ${
-        s.persistent
-          ? "on a mounted volume — it survives redeploys."
-          : "(ephemeral — will reset on redeploy)."
-      }`;
-    el.appendChild(help);
-  }
-  if (!el.querySelector("[slot=meta]")) {
-    const meta = document.createElement("p");
-    meta.slot = "meta";
-    meta.className = "meta";
-    meta.textContent = `Uptime ${s.uptime}s \u00b7 Bun ${s.bun}`;
-    el.appendChild(meta);
-  }
 }
 
 export class MessageView extends HTMLElement {
@@ -84,10 +59,7 @@ export class MessageView extends HTMLElement {
       if (msg) ta.value = msg.message;
     });
 
-    loadMessage().then(() => {
-      const s = status.peek();
-      if (s) renderStatus(this, s);
-    });
+    loadMessage();
 
     btn.addEventListener("click", async () => {
       await saveMessage({ message: ta.value });
