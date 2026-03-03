@@ -1,11 +1,22 @@
 import { effect } from "../../lib/signals";
 import { toast } from "../../lib/toast";
-import { message, status, loadMessage, saveMessage, connectMessage } from "./message";
+import {
+  message,
+  status,
+  loadMessage,
+  saveMessage,
+  connectMessage,
+} from "./message";
 import type { Status } from "./message";
 
 const template = document.createElement("template");
 template.innerHTML = `
-  <slot name="title"><h1>Paintbrush</h1></slot>
+  <slot name="title">
+    <h1 style="display:flex;justify-content:space-between;align-items:flex-end">
+      <span>Paintbrush</span>
+      <img src="/logo.png" alt="" style="height:2rem">
+    </h1>
+  </slot>
   <textarea part="editor"></textarea>
   <div class="toolbar">
     <slot name="actions"><button class="primary" part="save">Save</button></slot>
@@ -36,9 +47,11 @@ function renderStatus(el: HTMLElement, s: Status) {
     help.innerHTML = `
       Edit the message above and hit <strong>Save</strong> to persist it.
       Your data is stored at <code>${s.dataPath}</code>
-      ${s.persistent
-        ? "on a mounted volume — it survives redeploys."
-        : "(ephemeral — will reset on redeploy)."}`;
+      ${
+        s.persistent
+          ? "on a mounted volume — it survives redeploys."
+          : "(ephemeral — will reset on redeploy)."
+      }`;
     el.appendChild(help);
   }
   if (!el.querySelector("[slot=meta]")) {
@@ -81,7 +94,10 @@ export class MessageView extends HTMLElement {
       toast("Saved");
     });
 
-    this.#dispose = () => { stopEffect(); stopWs(); };
+    this.#dispose = () => {
+      stopEffect();
+      stopWs();
+    };
   }
 
   disconnectedCallback() {
