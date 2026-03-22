@@ -1,7 +1,12 @@
 node_modules
 .env
 .claude
-framework
+framework/demo
+framework/zero
+framework/lib
+framework/docs
+framework/README.md
+!framework/sample.html
 demo
 zero
 .git
