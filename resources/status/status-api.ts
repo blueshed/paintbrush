@@ -1,4 +1,4 @@
-import { loggedRequest, createLogger } from "@lib/logger";
+import { loggedRequest, createLogger } from "@blueshed/railroad";
 import type { Status } from "./status";
 
 const startedAt = Date.now();

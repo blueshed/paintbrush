@@ -1,24 +1,24 @@
 /**
- * Shared resource registry — named provide/inject for cross-cutting services.
- *
- * Usage:
- *   provide("server", server);          // register after creation
- *   const srv = inject<Server>("server"); // retrieve (throws if missing)
- *   const srv = tryInject<Server>("server"); // retrieve (undefined if missing)
+ * Shared — re-exports railroad's typed provide/inject,
+ * adds tryInject, and defines framework-wide keys.
  */
 
-const _resources = new Map<string, any>();
+export { key, provide, inject } from "@blueshed/railroad/shared";
+export type { Key } from "@blueshed/railroad/shared";
 
-export function provide<T>(name: string, value: T): void {
-  _resources.set(name, value);
+import { key, inject } from "@blueshed/railroad/shared";
+import type { Key } from "@blueshed/railroad/shared";
+
+export function tryInject<T>(k: Key<T>): T | undefined {
+  try {
+    return inject(k);
+  } catch {
+    return undefined;
+  }
 }
 
-export function inject<T>(name: string): T {
-  const v = _resources.get(name);
-  if (v === undefined) throw new Error(`"${name}" not provided`);
-  return v as T;
-}
-
-export function tryInject<T>(name: string): T | undefined {
-  return _resources.get(name) as T | undefined;
-}
+// Framework keys
+export const SERVER = key<any>("server");
+export const DB = key<any>("db");
+export const SESSIONS = key<any>("sessions");
+export const WS = key<WebSocket>("ws");

@@ -9,7 +9,8 @@
  * To add a WS topic: add the resource name to the `topics` set.
  */
 import homepage from "./index.html";
-import { provide } from "./lib/shared";
+import sample from "./framework/sample.html";
+import { provide, SERVER } from "./lib/shared";
 import { getMessage, putMessage } from "./resources/message/message-api";
 import { getStatus } from "./resources/status/status-api";
 import { getLogo, notFound } from "./resources/common-api";
@@ -34,6 +35,7 @@ const server = Bun.serve({
       if (server.upgrade(req)) return;
       return new Response("Upgrade failed", { status: 400 });
     },
+    "/sample": sample,
     "/*": notFound,
   },
   websocket: {
@@ -50,6 +52,6 @@ const server = Bun.serve({
   },
 });
 
-provide("server", server);
+provide(SERVER, server);
 
 console.log(`→ http://localhost:${server.port}`);

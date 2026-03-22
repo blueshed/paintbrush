@@ -1,6 +1,6 @@
 import { describe, test, expect, afterEach } from "bun:test";
 import { buildRoutes } from "../../../lib/decorators";
-import { provide } from "../../../lib/shared";
+import { provide, DB } from "../../../lib/shared";
 import { createDatabase } from "../../../lib/sqlite-store";
 import { Admin } from "./admin-api";
 import { unlinkSync } from "fs";
@@ -18,7 +18,7 @@ describe("Admin — backup", () => {
 
   test("GET /admin/backup returns binary with correct headers", async () => {
     const db = createDatabase(TMP);
-    provide("db", db);
+    provide(DB, db);
     const store = db.sqliteStore<{ id: string; val: string }>("things");
     await store.insert({ id: "1", val: "hello" });
 
@@ -41,7 +41,7 @@ describe("Admin — restore", () => {
 
   test("POST /admin/restore overwrites database and returns success", async () => {
     const db = createDatabase(TMP);
-    provide("db", db);
+    provide(DB, db);
     const store = db.sqliteStore<{ id: string; val: string }>("things");
     await store.insert({ id: "1", val: "before" });
 

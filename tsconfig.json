@@ -5,9 +5,11 @@
     "moduleResolution": "bundler",
     "strict": true,
     "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@blueshed/railroad",
     "paths": {
       "@lib/*": ["./lib/*"]
     }
   },
-  "exclude": ["framework"]
+  "exclude": ["framework/lib/*.test.ts"]
 }

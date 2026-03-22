@@ -1,4 +1,4 @@
-import { signal } from "@lib/signals";
+import { signal } from "@blueshed/railroad/signals";
 
 export type Status = { dataPath: string; persistent: boolean; uptime: number; bun: string };
 

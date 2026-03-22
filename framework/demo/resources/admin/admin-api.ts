@@ -1,6 +1,5 @@
 import { Controller, GET, POST } from "../../../lib/decorators";
-import { inject } from "../../../lib/shared";
-import type { DatabaseInstance } from "../../../lib/sqlite-store";
+import { inject, DB } from "../../../lib/shared";
 
 @Controller
 export class Admin {
@@ -11,7 +10,7 @@ export class Admin {
 
   @GET("/admin/backup")
   async download() {
-    const { backup } = inject<DatabaseInstance>("db");
+    const { backup } = inject(DB);
     const data = await backup();
     return new Response(data.buffer as ArrayBuffer, {
       headers: {
@@ -23,7 +22,7 @@ export class Admin {
 
   @POST("/admin/restore")
   async upload(req: Request) {
-    const { restore } = inject<DatabaseInstance>("db");
+    const { restore } = inject(DB);
     const data = new Uint8Array(await req.arrayBuffer());
     await restore(data);
     return Response.json({ ok: true, message: "Database restored" });

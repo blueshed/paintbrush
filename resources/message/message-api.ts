@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
-import { tryInject } from "@lib/shared";
-import { loggedRequest, createLogger } from "@lib/logger";
+import { tryInject, SERVER } from "@lib/shared";
+import { loggedRequest, createLogger } from "@blueshed/railroad";
 import type { Message } from "./message";
 
 const dataDir = process.env.DATA_PATH ?? import.meta.dir;
@@ -19,7 +19,7 @@ const getMessageImpl = () =>
 const putMessageImpl = async (req: Request) => {
   const body: Message = await req.json();
   writeFileSync(file, JSON.stringify(body, null, 2));
-  const server = tryInject<any>("server");
+  const server = tryInject(SERVER);
   if (server) {
     server.publish(
       "message",

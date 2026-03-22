@@ -12,7 +12,7 @@
  */
 
 import type { Store } from "./stores";
-import { tryInject } from "./shared";
+import { tryInject, SERVER, SESSIONS } from "./shared";
 import type { SessionStore } from "./sessions";
 
 // ── Metadata ──
@@ -158,7 +158,7 @@ export function Controller(
 
 function wrapWithAuth(handler: RouteHandler, role?: string): RouteHandler {
   return async (req: any) => {
-    const sessions = tryInject<SessionStore>("sessions");
+    const sessions = tryInject(SESSIONS) as SessionStore | undefined;
     if (!sessions) return Response.json({ error: "Auth not configured" }, { status: 500 });
     const session = await sessions.fromRequest(req);
     if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -216,7 +216,7 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
           const item = { ...defaults, ...body, id, createdAt: body.createdAt ?? new Date().toISOString() };
           items.push(item);
           await store.write(items);
-          const server = tryInject<any>("server");
+          const server = tryInject(SERVER);
           if (notify && server) {
             server.publish(notify, JSON.stringify({ resource: notify, action: "create", item }));
           }
@@ -240,7 +240,7 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
           for (const field of readonlyFields) delete body[field];
           items[idx] = { ...items[idx], ...body, id: req.params.id };
           await store.write(items);
-          const server = tryInject<any>("server");
+          const server = tryInject(SERVER);
           if (notify && server) {
             server.publish(notify, JSON.stringify({ resource: notify, action: "update", id: req.params.id, fields: body }));
           }
@@ -253,7 +253,7 @@ export function buildRoutes(...classes: (new (...args: any[]) => any)[]): RouteO
             return Response.json({ error: "Not found" }, { status: 404 });
           }
           await store.write(filtered);
-          const server = tryInject<any>("server");
+          const server = tryInject(SERVER);
           if (notify && server) {
             server.publish(notify, JSON.stringify({ resource: notify, action: "delete", id: req.params.id }));
           }

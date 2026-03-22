@@ -2,7 +2,7 @@
 
 # Paintbrush
 
-A starter for building web apps with [Bun](https://bun.sh). Explicit routes, reactive signals, and web components — no build step, no framework dependencies.
+A starter for building web apps with [Bun](https://bun.sh). Explicit routes, reactive JSX, and typed dependency injection — powered by [@blueshed/railroad](https://github.com/blueshed/railroad).
 
 ## Quick start
 
@@ -20,11 +20,11 @@ Open `http://localhost:3000`. You get a working app with a single editable messa
 
 ```
 server.ts          — Bun.serve() with explicit routes and WebSocket handler
-app.ts             — client entry: hash router, provide/inject, toast
+app.tsx            — client entry: hash router, provide/inject, JSX components
 index.html         — HTML shell (Bun auto-bundles the TypeScript)
 styles.css         — minimal CSS with variables and touch targets
 resources/message/ — starter resource (server + client + view)
-lib/               — shared utilities (signals, router, WebSocket, toast)
+lib/               — app-specific utilities (shared keys, reconnecting WS, toast)
 ```
 
 Each resource is a folder with three files:
@@ -33,19 +33,39 @@ Each resource is a folder with three files:
 |------|------|
 | `{name}-api.ts` | Server handlers — plain functions that return `Response` |
 | `{name}.ts` | Client store — types, signals, fetch wrappers, WebSocket subscription |
-| `{name}-view.ts` | Web component — shadow DOM, reactive rendering via `effect()` |
+| `{name}-view.tsx` | JSX functional component — reactive rendering via signals |
+
+## Railroad
+
+Paintbrush uses [@blueshed/railroad](https://github.com/blueshed/railroad) for its core primitives:
+
+- **Signals** — `signal()`, `computed()`, `effect()`, `batch()`
+- **JSX** — real DOM, no virtual DOM. Signal-aware props and children
+- **Routes** — hash-based client router with automatic dispose scoping
+- **Shared** — typed `provide()`/`inject()` for dependency injection
+- **Logger** — `createLogger()`, `loggedRequest()` for server-side logging
+
+```json
+// tsconfig.json — JSX just works, no imports needed
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "@blueshed/railroad"
+  }
+}
+```
 
 ## Adding resources
 
 Using [Claude Code](https://claude.com/claude-code)? Type `/add-resource` to scaffold a new resource with all files and wiring.
 
-Manually: create a folder under `resources/`, add the three files following the message pattern, then wire the routes in `server.ts` and `app.ts`.
+Manually: create a folder under `resources/`, add the three files following the message pattern, then wire the routes in `server.ts` and `app.tsx`.
 
 ## How it works
 
 **Server:** Routes map directly to handler functions. No decorators, no metadata, no magic. WebSocket pub/sub notifies clients after mutations.
 
-**Client:** Signals provide lightweight reactivity. `effect()` re-renders when dependencies change. Web components use shadow DOM with `adoptedStyleSheets` to inherit global CSS.
+**Client:** Signals provide lightweight reactivity. JSX functional components return real DOM nodes. `when()`, `list()`, and `text()` handle conditional rendering, reactive lists, and computed text.
 
 **WebSocket:** One shared connection, multiplexed with `opendoc`/`closedoc` messages. The server whitelists topics in a `Set`.
 
@@ -55,9 +75,9 @@ All colours are CSS custom properties in `:root`. Touch targets scale up on touc
 
 ## Design decisions
 
-- **No build step.** Bun bundles TypeScript from `index.html` automatically.
-- **No virtual DOM.** Signals drive targeted updates. Web components isolate scope.
-- **No framework dependency.** The signal system is ~180 lines. The router is ~120 lines.
+- **No build step.** Bun bundles TypeScript and TSX from `index.html` automatically.
+- **No virtual DOM.** Signals drive targeted updates. JSX creates real DOM elements.
+- **Railroad for primitives.** Signals, JSX, routing, and DI from one ~400-line package.
 - **REST is the write path.** WebSocket is notification-only. Clients write via fetch, receive updates via pub/sub.
 - **Explicit over implicit.** Every route and handler is visible in the code. An AI (or a human) can read `server.ts` and know exactly what the app does.
 

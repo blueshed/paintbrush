@@ -26,7 +26,7 @@
 import { Database } from "bun:sqlite";
 import { renameSync, unlinkSync, writeFileSync } from "fs";
 import type { Store } from "./stores";
-import { inject } from "./shared";
+import { inject, DB } from "./shared";
 
 // ── Granular store interface ──
 
@@ -221,7 +221,7 @@ export function sqliteStore<T extends { id: string }>(
 ): GranularStore<T> {
   let inner: GranularStore<T> | null = null;
   function store(): GranularStore<T> {
-    if (!inner) inner = inject<DatabaseInstance>("db").sqliteStore<T>(table);
+    if (!inner) inner = (inject(DB) as DatabaseInstance).sqliteStore<T>(table);
     return inner;
   }
   return {

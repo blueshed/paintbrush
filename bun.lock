@@ -4,22 +4,27 @@
   "workspaces": {
     "": {
       "name": "paintbrush",
+      "dependencies": {
+        "@blueshed/railroad": "github:blueshed/railroad",
+      },
       "devDependencies": {
-        "@railway/cli": "^4.30.5",
-        "@types/bun": "^1.3.9",
+        "@railway/cli": "^4.33.0",
+        "@types/bun": "^1.3.11",
       },
     },
   },
   "packages": {
+    "@blueshed/railroad": ["@blueshed/railroad@github:blueshed/railroad#e957eb5", {}, "blueshed-railroad-e957eb5", "sha512-ugSWMqUZMm0oBtJeCRs1hgZdiwuaH+HvyBpawsxZqWgN+96UDWuhyw3GjpZLvvEIvotQvTSE8H4gVxZwFYeg5A=="],
+
     "@napi-rs/triples": ["@napi-rs/triples@1.2.0", "", {}, "sha512-HAPjR3bnCsdXBsATpDIP5WCrw0JcACwhhrwIAQhiR46n+jm+a2F8kBsfseAuWtSyQ+H3Yebt2k43B5dy+04yMA=="],
 
-    "@railway/cli": ["@railway/cli@4.30.5", "", { "dependencies": { "@napi-rs/triples": "^1.1.0", "node-fetch": "^3.1.0", "tar": "^6.1.11" }, "bin": { "railway": "bin/railway.js" } }, "sha512-M0OwCD/++baNx5b6Wp0AJ7N1j6nuBvKeoxpKwTz/IzhyMMTSlURFbklurenaPiXiXWwJHnTmZ4w9Utq47psQ1w=="],
+    "@railway/cli": ["@railway/cli@4.33.0", "", { "dependencies": { "@napi-rs/triples": "^1.1.0", "node-fetch": "^3.1.0", "tar": "^6.1.11" }, "bin": { "railway": "bin/railway.js" } }, "sha512-pwCkxenaV//MUbEDD3BOPRuyP+ie2CG+fDbSUByxz/ADi328LCz3LuD9YMdCOnc6hL+1pnqLB/P9j6cfg58q1w=="],
 
-    "@types/bun": ["@types/bun@1.3.9", "", { "dependencies": { "bun-types": "1.3.9" } }, "sha512-KQ571yULOdWJiMH+RIWIOZ7B2RXQGpL1YQrBtLIV3FqDcCu6FsbFUBwhdKUlCKUpS3PJDsHlJ1QKlpxoVR+xtw=="],
+    "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
     "@types/node": ["@types/node@25.3.2", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-RpV6r/ij22zRRdyBPcxDeKAzH43phWVKEjL2iksqo1Vz3CuBUrgmPpPhALKiRfU7OMCmeeO9vECBMsV0hMTG8Q=="],
 
-    "bun-types": ["bun-types@1.3.9", "", { "dependencies": { "@types/node": "*" } }, "sha512-+UBWWOakIP4Tswh0Bt0QD0alpTY8cb5hvgiYeWCMet9YukHbzuruIEeXC2D7nMJPB12kbh8C7XJykSexEqGKJg=="],
+    "bun-types": ["bun-types@1.3.11", "", { "dependencies": { "@types/node": "*" } }, "sha512-1KGPpoxQWl9f6wcZh57LvrPIInQMn2TQ7jsgxqpRzg+l0QPOFvJVH7HmvHo/AiPgwXy+/Thf6Ov3EdVn1vOabg=="],
 
     "chownr": ["chownr@2.0.0", "", {}, "sha512-bIomtDF5KGpdogkLd9VspvFzk9KfpyyGlS8YFVZl7TGPBHL5snIOnxeshwVgPteQ9b4Eydl+pVbIyE1DcvCWgQ=="],
 

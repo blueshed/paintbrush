@@ -2,7 +2,7 @@ import { mkdirSync } from "fs";
 import { dirname } from "path";
 import homepage from "./index.html";
 import { buildRoutes, getNotifyTopics } from "../lib/decorators";
-import { provide } from "../lib/shared";
+import { provide, DB, SERVER } from "../lib/shared";
 import { createDatabase } from "../lib/sqlite-store";
 import { Note } from "./resources/notes/notes-api";
 import { Todo } from "./resources/todos/todos-api";
@@ -11,7 +11,7 @@ import { Admin } from "./resources/admin/admin-api";
 
 const dbPath = process.env.DB_PATH ?? "./demo/data/app.db";
 mkdirSync(dirname(dbPath), { recursive: true });
-provide("db", createDatabase(dbPath));
+provide(DB, createDatabase(dbPath));
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
@@ -40,6 +40,6 @@ const server = Bun.serve({
   },
 });
 
-provide("server", server);
+provide(SERVER, server);
 
 console.log(`Paintbrush → http://localhost:${server.port}`);

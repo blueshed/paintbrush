@@ -1,6 +1,6 @@
 # Paintbrush
 
-Explicit routes and resources for Bun. Every route, handler, and subscription is visible in the code.
+Explicit routes and resources for Bun, powered by [@blueshed/railroad](https://github.com/blueshed/railroad) for signals, JSX, routing, and dependency injection.
 
 ## Commands
 
@@ -13,28 +13,28 @@ Explicit routes and resources for Bun. Every route, handler, and subscription is
 
 ```
 server.ts              — Bun.serve(): explicit routes, WebSocket handler
-app.ts                 — client: provide/inject, hash router, view imports
-index.html             — HTML shell (Bun auto-bundles app.ts)
+app.tsx                — client: provide/inject, hash router, JSX components
+index.html             — HTML shell (Bun auto-bundles app.tsx)
 styles.css             — CSS variables, components, touch targets
 resources/{name}/      — one subfolder per resource
   {name}-api.ts        — server handlers (exported functions)
   {name}.ts            — client store (types, signals, fetch, WS)
-  {name}-view.ts       — web component (custom element)
-lib/                   — shared utilities
-  signals.ts           — Signal, effect, computed, batch
-  routes.ts            — hash router: routes(), navigate()
-  shared.ts            — provide/inject/tryInject registry
+  {name}-view.tsx      — JSX functional component
+lib/                   — app-specific utilities
+  shared.ts            — re-exports railroad's provide/inject, adds tryInject + app keys
   reconnecting-ws.ts   — auto-reconnecting WebSocket
   toast.ts             — toast notification (notify/alert)
 ```
 
 ## Conventions
 
+- **Railroad for primitives**: signals, effects, JSX, routes, provide/inject, and logger all come from `@blueshed/railroad`
 - **Explicit wiring**: routes map directly to handler functions in `server.ts`
 - **Resource = folder**: each resource is `resources/{name}/` with three files
-- **Server handlers**: plain `(req: Request) => Response` functions. Use `tryInject<any>("server")?.publish()` for WebSocket notify after mutations
+- **Server handlers**: plain `(req: Request) => Response` functions. Use `tryInject(SERVER)?.publish()` for WebSocket notify after mutations
 - **Client store**: signals + fetch wrappers + optional WS subscription. Types shared via `import type`
-- **Web components**: shadow DOM with `adoptedStyleSheets` to inherit global CSS. Reactive via `effect()`. Clean up in `disconnectedCallback`
-- **Provide/inject**: registry for shared services (ws, toast, server). Separate instances on server vs client
-- **CSS variables**: all colors in `:root`. Variables pierce shadow DOM. Touch targets via `@media (pointer: coarse)`
+- **JSX views**: functional components returning JSX nodes. Reactive via signals, `when()`, `list()`, `text()`. Cleanup is automatic via railroad's dispose scopes
+- **Typed keys**: provide/inject uses railroad's typed `key()` symbols, defined in `lib/shared.ts` (`WS`, `TOAST`, `SERVER`)
+- **TSX config**: `tsconfig.json` sets `jsxImportSource: "@blueshed/railroad"` — no JSX imports needed in .tsx files
+- **CSS variables**: all colors in `:root`. Touch targets via `@media (pointer: coarse)`
 - **WebSocket protocol**: client sends `opendoc`/`closedoc` with resource topic. Server whitelists topics in a `Set`

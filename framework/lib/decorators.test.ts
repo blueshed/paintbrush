@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { Resource, Field, Controller, GET, buildRoutes } from "./decorators";
-import { provide } from "./shared";
+import { provide, SERVER } from "./shared";
 import { memoryStore } from "./stores";
 import type { Store } from "./stores";
 
@@ -50,7 +50,7 @@ describe("buildRoutes — CRUD", () => {
   let routes: any;
 
   beforeEach(() => {
-    provide("server", null);
+    provide(SERVER, null);
     const Item = makeTestResource();
     routes = buildRoutes(Item);
   });
@@ -156,7 +156,7 @@ describe("buildRoutes — notify publish", () => {
 
   beforeEach(() => {
     published = [];
-    provide("server", {
+    provide(SERVER, {
       publish(topic: string, message: string) {
         published.push({ topic, message });
       },
@@ -204,7 +204,7 @@ describe("buildRoutes — notify publish", () => {
   });
 
   test("no publish when server is not provided", async () => {
-    provide("server", null);
+    provide(SERVER, null);
     await routes["/api/items"].POST(jsonReq({ name: "Silent" }));
     expect(published).toHaveLength(0);
   });
@@ -215,7 +215,7 @@ describe("buildRoutes — notify publish", () => {
 describe("buildRoutes — resource without notify", () => {
   test("does not publish on writes", async () => {
     const published: any[] = [];
-    provide("server", { publish(_t: string, _m: string) { published.push(1); } });
+    provide(SERVER, { publish(_t: string, _m: string) { published.push(1); } });
 
     const quietStore = memoryStore();
 

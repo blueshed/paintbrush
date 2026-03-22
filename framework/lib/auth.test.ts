@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { Resource, Field, Controller, GET, Auth, buildRoutes } from "./decorators";
-import { provide } from "./shared";
+import { provide, SESSIONS, SERVER } from "./shared";
 import { createSessionStore } from "./sessions";
 import { createDatabase } from "./sqlite-store";
 import { memoryStore } from "./stores";
@@ -27,8 +27,8 @@ function withParams(req: Request, params: Record<string, string>): any {
 beforeEach(() => {
   const db = createDatabase(":memory:");
   sessions = createSessionStore(db);
-  provide("sessions", sessions);
-  provide("server", null);
+  provide(SESSIONS, sessions);
+  provide(SERVER, null);
 });
 
 describe("@Auth on @Resource", () => {

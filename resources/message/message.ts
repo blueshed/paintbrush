@@ -1,5 +1,5 @@
-import { signal } from "@lib/signals";
-import { tryInject } from "@lib/shared";
+import { signal } from "@blueshed/railroad/signals";
+import { tryInject, WS } from "@lib/shared";
 
 export type Message = { message: string };
 
@@ -20,7 +20,7 @@ export async function saveMessage(body: Message) {
 }
 
 export function connectMessage() {
-  const ws = tryInject<WebSocket>("ws");
+  const ws = tryInject(WS);
   if (!ws) return () => {};
   ws.send(JSON.stringify({ action: "opendoc", resource: "message" }));
   const handler = (e: MessageEvent) => {
