@@ -1,10 +1,7 @@
 /*
- * Styles — CSS variables, base components, and touch targets.
+ * Styles — CSS variables, base components, responsive layout.
  *
- * All colors are in :root as variables — they pierce shadow DOM,
- * so web components inherit the theme automatically.
- *
- * Sections: variables → reset & layout → components → touch targets
+ * Sections: variables → reset & layout → components → sidebar & dock → touch targets
  */
 
 :root {
@@ -38,18 +35,17 @@ body {
 
 #app {
   max-width: 640px;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 2rem 1rem;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
 }
 
+/* --- Typography & base elements --- */
+
 h1 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; }
-.toolbar {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-.toolbar h1 { margin-bottom: 0; margin-right: auto; }
 
 button {
   font-size: 0.8rem;
@@ -60,8 +56,11 @@ button {
   cursor: pointer;
 }
 button:hover { background: var(--hover); }
+button svg { vertical-align: -0.15em; }
 button.primary { background: var(--primary); color: var(--surface); border-color: var(--primary); }
 button.primary:hover { background: var(--primary-hover); }
+button.danger { color: var(--danger); border-color: var(--danger); }
+button.danger:hover { background: var(--danger-bg); }
 
 input, textarea {
   width: 100%;
@@ -73,11 +72,31 @@ input, textarea {
 }
 textarea { min-height: 120px; resize: vertical; }
 
-button.danger { color: var(--danger); border-color: var(--danger); }
-button.danger:hover { background: var(--danger-bg); }
+label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+label input,
+label textarea { margin-top: 0.25rem; }
 
-nav { display: flex; flex-direction: column; gap: 1px; }
-nav a {
+hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+[hidden] { display: none !important; }
+
+/* --- Components --- */
+
+.toolbar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.toolbar h1 { margin-bottom: 0; margin-right: auto; }
+
+.nav-list { display: flex; flex-direction: column; gap: 1px; }
+.nav-list a {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -88,10 +107,11 @@ nav a {
   background: var(--surface);
   border: 1px solid var(--border);
 }
-nav a:first-child { border-radius: 4px 4px 0 0; }
-nav a:last-child { border-radius: 0 0 4px 4px; }
-nav a:only-child { border-radius: 4px; }
-nav a:hover { background: var(--bg); }
+.nav-list a:first-child { border-radius: 4px 4px 0 0; }
+.nav-list a:last-child { border-radius: 0 0 4px 4px; }
+.nav-list a:only-child { border-radius: 4px; }
+.nav-list a:hover { background: var(--bg); }
+
 .badge {
   font-size: 0.7rem;
   color: var(--text-muted);
@@ -125,21 +145,9 @@ nav a:hover { background: var(--bg); }
 }
 .back:hover { color: var(--text-secondary); }
 
-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-}
-label input,
-label textarea { margin-top: 0.25rem; }
-
 .help { font-size: 0.8rem; color: var(--text-secondary); margin-top: 1rem; line-height: 1.6; }
 .help code { background: var(--code-bg); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 0.75rem; }
 .meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; }
-
-[hidden] { display: none !important; }
 
 .confirm .confirm-prompt {
   font-size: 0.8rem;
@@ -182,14 +190,75 @@ label textarea { margin-top: 0.25rem; }
   box-shadow: var(--shadow);
 }
 .modal h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-.modal .toolbar { margin-top: 1rem; margin-bottom: 0; justify-content: flex-end; }
+.modal .toolbar { margin-top: 1rem; margin-bottom: 0; justify-content: flex-end; flex-wrap: nowrap; }
 
-hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+/* --- Sidebar (desktop) & Dock (mobile) --- */
+
+.sidebar, .dock { display: none; }
+
+@media (pointer: fine) {
+  body:has(.sidebar) { padding-left: 56px; }
+  .sidebar {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 56px;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.75rem 0;
+    gap: 0.25rem;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    z-index: 100;
+  }
+  .sidebar a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  .sidebar a:hover { background: var(--hover); color: var(--text-secondary); }
+  .sidebar a.active { color: var(--primary); background: var(--hover); }
+  .sidebar .spacer { flex: 1; }
+  .sidebar svg { width: 20px; height: 20px; }
+}
 
 @media (pointer: coarse) {
+  .dock {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    justify-content: space-around;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0.4rem 0 env(safe-area-inset-bottom, 0);
+    z-index: 100;
+  }
+  .dock a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.35rem 1rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-decoration: none;
+  }
+  .dock a.active { color: var(--primary); }
+  .dock a:hover { color: var(--text-secondary); }
+  .dock svg { width: 20px; height: 20px; }
   button { min-height: 44px; padding: 0.6rem 1rem; font-size: 0.85rem; }
   input, textarea { min-height: 44px; padding: 0.65rem; font-size: 1rem; }
-  nav a { min-height: 44px; padding: 0.75rem 1rem; }
+  .nav-list a { min-height: 44px; padding: 0.75rem 1rem; }
   .list a { padding: 0.75rem 0; }
   .back { padding: 0.5rem 0; }
   h1 { font-size: 1.5rem; }

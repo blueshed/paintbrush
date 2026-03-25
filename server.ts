@@ -10,7 +10,7 @@
  */
 import { createLogger, loggedRequest } from "@blueshed/railroad";
 import homepage from "./index.html";
-import sample from "./framework/sample.html";
+import sample from "./resources/sample.html";
 import { provide, SERVER } from "./lib/shared";
 import { getMessage, putMessage } from "./resources/message/message-api";
 import { getStatus } from "./resources/status/status-api";

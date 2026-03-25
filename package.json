@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "scripts": {
     "dev": "bun --hot server.ts",
-    "sample": "bun framework/sample.html"
+    "sample": "open http://localhost:3000/sample"
   },
   "bun-create": {
     "start": "bun dev"
@@ -13,9 +13,11 @@
   },
   "devDependencies": {
     "@railway/cli": "^4.33.0",
-    "@types/bun": "^1.3.11"
+    "@types/bun": "^1.3.11",
+    "@types/feather-icons": "^4.29.4"
   },
   "dependencies": {
-    "@blueshed/railroad": "github:blueshed/railroad"
+    "@blueshed/railroad": "github:blueshed/railroad",
+    "feather-icons": "^4.29.2"
   }
 }

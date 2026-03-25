@@ -1,4 +1,4 @@
-import { when } from "@blueshed/railroad";
+import { when, text } from "@blueshed/railroad";
 import { status, loadStatus } from "./status";
 
 export function StatusView() {
@@ -6,19 +6,16 @@ export function StatusView() {
 
   return when(
     () => status.get(),
-    () => {
-      const s = status.get()!;
-      return (
-        <>
-          <p class="help">
-            Your data is stored at <code>{s.dataPath}</code>
-            {s.persistent
-              ? " on a mounted volume — it survives redeploys."
-              : " (ephemeral — will reset on redeploy)."}
-          </p>
-          <p class="meta">Uptime {s.uptime}s · Bun {s.bun}</p>
-        </>
-      );
-    }
+    () => (
+      <div onclick={() => loadStatus()} style="cursor:pointer">
+        <p class="help">
+          Your data is stored at <code>{text(() => status.get()!.dataPath)}</code>
+          {text(() => status.get()!.persistent
+            ? " on a mounted volume — it survives redeploys."
+            : " (ephemeral — will reset on redeploy).")}
+        </p>
+        <p class="meta">{text(() => `Uptime ${status.get()!.uptime}s · Bun ${status.get()!.bun}`)}</p>
+      </div>
+    )
   );
 }

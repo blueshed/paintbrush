@@ -1,14 +1,6 @@
 node_modules
 .env
 .claude
-framework/demo
-framework/zero
-framework/lib
-framework/docs
-framework/README.md
-!framework/sample.html
-demo
-zero
 .git
 .gitignore
 README.md

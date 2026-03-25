@@ -11,7 +11,7 @@
             <!-- ===== HOME / NAV ===== -->
             <section class="sample-section">
                 <h1>Paintbrush</h1>
-                <nav>
+                <nav class="nav-list">
                     <a href="#/notes">Notes <span class="badge">3</span></a>
                     <a href="#/todos">Todos <span class="badge">12</span></a>
                     <a href="#/checklists">Checklists</a>
@@ -24,7 +24,7 @@
             <section class="sample-section">
                 <div class="toolbar">
                     <h1>Notes</h1>
-                    <button class="primary" id="new-btn">+ New</button>
+                    <button class="primary" id="new-btn"><i data-feather="plus"></i> New</button>
                 </div>
                 <ul class="list">
                     <li>
@@ -54,7 +54,7 @@
             <section class="sample-section">
                 <div class="toolbar">
                     <h1>Todos</h1>
-                    <button class="primary">+ New</button>
+                    <button class="primary"><i data-feather="plus"></i> New</button>
                 </div>
                 <p class="empty">No todos yet.</p>
             </section>
@@ -63,7 +63,7 @@
 
             <!-- ===== DETAIL / EDIT FORM ===== -->
             <section class="sample-section">
-                <a class="back" href="#/notes">&larr; Notes</a>
+                <a class="back" href="#/notes"><i data-feather="arrow-left"></i> Notes</a>
                 <h1>Edit Note</h1>
                 <form>
                     <label>
@@ -89,7 +89,7 @@ Some thoughts I had earlier today about the project direction and next steps.</t
 
             <!-- ===== CONFIRM DELETE (interactive) ===== -->
             <section class="sample-section">
-                <a class="back" href="#/notes">&larr; Notes</a>
+                <a class="back" href="#/notes"><i data-feather="arrow-left"></i> Notes</a>
                 <h1>Edit Note</h1>
                 <form>
                     <label>
@@ -121,6 +121,17 @@ Review Q2 targets and assign owners for each workstream.</textarea
             <!-- ===== TOAST ===== -->
             <div class="toast" id="toast">Saved</div>
 
+            <hr />
+
+            <!-- ===== ABOUT MODAL TRIGGER ===== -->
+            <section class="sample-section">
+                <div class="toolbar">
+                    <h1>About Modal</h1>
+                    <button class="primary" id="about-btn">Open About</button>
+                </div>
+                <p class="help">Modal with reverse-flex toolbar: Delete on left, Cancel + OK on right. Enter submits, Esc closes.</p>
+            </section>
+
             <!-- ===== NEW NOTE MODAL ===== -->
             <div class="modal-backdrop" id="modal" hidden>
                 <div class="modal">
@@ -146,62 +157,46 @@ Review Q2 targets and assign owners for each workstream.</textarea
                 </div>
             </div>
 
-            <script>
-                // Confirm delete
-                const delBtn = document.getElementById("delete-btn");
-                const delToolbar = document.getElementById("delete-toolbar");
-                const confirmToolbar =
-                    document.getElementById("confirm-toolbar");
-                const confirmNo = document.getElementById("confirm-no");
-                delBtn.addEventListener("click", () => {
-                    delToolbar.hidden = true;
-                    confirmToolbar.hidden = false;
-                });
-                confirmNo.addEventListener("click", () => {
-                    confirmToolbar.hidden = true;
-                    delToolbar.hidden = false;
-                });
+            <!-- ===== ABOUT MODAL (with inline confirm delete) ===== -->
+            <div class="modal-backdrop" id="about-modal" hidden>
+                <div class="modal">
+                    <h2>About Note</h2>
+                    <form id="about-form">
+                        <label>
+                            Title
+                            <input type="text" value="First note" />
+                        </label>
+                        <label>
+                            Description
+                            <textarea>Some thoughts about the project direction.</textarea>
+                        </label>
+                        <div class="toolbar" style="display:flex;flex-direction:row-reverse" id="about-actions">
+                            <button type="submit" class="primary">OK</button>
+                            <button type="button" id="about-cancel">Cancel</button>
+                            <div style="flex:1"></div>
+                            <button type="button" class="danger" id="about-delete">Delete</button>
+                        </div>
+                        <div class="toolbar" style="display:flex;flex-direction:row-reverse" id="about-confirm" hidden>
+                            <button type="button" id="about-confirm-no">No</button>
+                            <button type="button" class="danger" id="about-confirm-yes">Yes, delete</button>
+                            <div style="flex:1"></div>
+                            <span class="confirm-prompt">Delete this note?</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-                // Toast
-                const toast = document.getElementById("toast");
-                function showToast(msg, style = "notify") {
-                    toast.textContent = msg;
-                    toast.className = "toast show " + style;
-                    setTimeout(() => toast.classList.remove("show"), 1500);
-                }
-                document
-                    .getElementById("save-btn")
-                    .addEventListener("click", () =>
-                        showToast("Saved", "notify"),
-                    );
+            <script type="module" src="./sample.ts"></script>
 
-                // Confirm delete toast
-                document
-                    .getElementById("confirm-yes")
-                    .addEventListener("click", () => {
-                        confirmToolbar.hidden = true;
-                        delToolbar.hidden = false;
-                        showToast("Note deleted", "alert");
-                    });
+            <hr />
 
-                // Modal
-                const modal = document.getElementById("modal");
-                document
-                    .getElementById("new-btn")
-                    .addEventListener("click", () => (modal.hidden = false));
-                document
-                    .getElementById("modal-cancel")
-                    .addEventListener("click", () => (modal.hidden = true));
-                document
-                    .getElementById("modal-create")
-                    .addEventListener("click", () => {
-                        modal.hidden = true;
-                        showToast("Note created", "notify");
-                    });
-                modal.addEventListener("click", (e) => {
-                    if (e.target === modal) modal.hidden = true;
-                });
-            </script>
+            <!-- ===== DOCK ===== -->
+            <section class="sample-section">
+                <div class="toolbar">
+                    <h1>Dock</h1>
+                </div>
+                <p class="help">Fixed bottom nav bar. Use <code>.dock</code> on a <code>&lt;nav&gt;</code>. Active item gets <code>.active</code>.</p>
+            </section>
 
             <hr />
 
@@ -221,5 +216,29 @@ Review Q2 targets and assign owners for each workstream.</textarea
                 <p class="meta">Uptime 42s · Bun 1.3.10</p>
             </section>
         </div>
+
+        <!-- sidebar for desktop — icons only, settings at bottom -->
+        <nav class="sidebar">
+            <a href="#/" class="active" title="Home"><i data-feather="home"></i></a>
+            <a href="#/notes" title="Notes"><i data-feather="file-text"></i></a>
+            <div class="spacer"></div>
+            <a href="#/settings" title="Settings"><i data-feather="settings"></i></a>
+        </nav>
+
+        <!-- dock for mobile — icons + labels, fixed bottom -->
+        <nav class="dock" id="sample-dock">
+            <a href="#/" class="active">
+                <i data-feather="home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#/notes">
+                <i data-feather="file-text"></i>
+                <span>Notes</span>
+            </a>
+            <a href="#/settings">
+                <i data-feather="settings"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
     </body>
 </html>

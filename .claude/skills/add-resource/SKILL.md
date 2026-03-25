@@ -1,6 +1,6 @@
 ---
 name: add-resource
-description: Scaffold a new resource with server handlers, client store, and web component view
+description: Scaffold a new resource with server handlers, client store, and JSX view
 disable-model-invocation: true
 argument-hint: [resource-name]
 ---
@@ -25,15 +25,15 @@ Before generating any code, read these files to learn the exact patterns:
 
 **In this skill folder** (adaptation guides for collections):
 - [reference/patterns.md](reference/patterns.md) — server handlers, client store, WebSocket, and wiring
-- [reference/views.md](reference/views.md) — web component structure, list/detail templates, shadow DOM, cleanup
+- [reference/views.md](reference/views.md) — JSX functional components, list/detail views, reactivity, cleanup
 
 **Living reference** (the actual working code):
 - `resources/message/message-api.ts` — server handler pattern
 - `resources/message/message.ts` — client store pattern (types, signals, fetch, WebSocket)
-- `resources/message/message-view.ts` — web component pattern (shadow DOM, effects, toast)
+- `resources/message/message-view.tsx` — JSX functional component pattern (effects, toast)
 - `server.ts` — where to wire routes and topics
-- `app.ts` — where to wire client routes and view imports
-- `framework/sample.html` — CSS class reference for UI
+- `app.tsx` — where to wire client routes and view imports
+- `resources/sample.html` — CSS class reference for UI (`/sample` route)
 
 ## Create files
 
@@ -41,13 +41,13 @@ Each resource is a subfolder under `resources/`:
 
 1. `resources/{name}/{name}-api.ts` — server handlers
 2. `resources/{name}/{name}.ts` — client store
-3. `resources/{name}/{name}-view.ts` — web component (or two: `{name}-list` + `{name}-detail`)
+3. `resources/{name}/{name}-view.tsx` — JSX functional component (or two exports: `{Name}List` + `{Name}Detail`)
 4. `resources/{name}/{names}.json` — empty data file `[]`
 
 ## Wire files
 
-5. `server.ts` — import handlers, add API routes, add topic to `topics` Set if real-time
-6. `app.ts` — import view, add client routes
+5. `server.ts` — import handlers, add API routes (wrapped with `loggedRequest`), add topic to `topics` Set if real-time
+6. `app.tsx` — import view component(s), add client routes
 
 ## Verify
 

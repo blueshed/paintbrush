@@ -1,10 +1,8 @@
-import { loggedRequest, createLogger } from "@blueshed/railroad";
 import type { Status } from "./status";
 
 const startedAt = Date.now();
-const log = createLogger("status");
 
-const getStatusImpl = () => {
+export const getStatus = () => {
   const dataDir = process.env.DATA_PATH ?? import.meta.dir;
   return Response.json({
     dataPath: dataDir,
@@ -13,5 +11,3 @@ const getStatusImpl = () => {
     bun: Bun.version,
   } satisfies Status);
 };
-
-export const getStatus = loggedRequest("status", getStatusImpl);

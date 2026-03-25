@@ -53,7 +53,7 @@ const id = url.pathname.split("/").pop()!;
 After each mutation, publish with the action type:
 
 ```ts
-tryInject<any>("server")?.publish(
+tryInject(SERVER)?.publish(
   "{names}",
   JSON.stringify({ resource: "{names}", action: "create", item }),
 );
@@ -89,36 +89,6 @@ if (msg.action === "update") {names}.set(current.map(x => x.id === msg.item.id ?
 if (msg.action === "delete") {names}.set(current.filter(x => x.id !== msg.id));
 ```
 
-## Web component (`{name}-view.ts`)
-
-For collections, create two custom elements: `{name}-list` and `{name}-detail`.
-
-### List element
-
-- Loads items in `connectedCallback`, renders with `effect()`
-- Uses `.list` CSS class with `<li><a>` for items
-- Uses `.empty` for empty state
-- Has `.toolbar` with `+ New` button
-- Navigates to detail view on item click (use `navigate` from `lib/routes`)
-
-### Detail element
-
-- Reads `data-id` attribute to know which item to load
-- Form with `label > input` / `label > textarea` for fields
-- Save button with `toast("Saved")` feedback
-- Delete with confirm pattern (`.confirm` toolbar swap)
-- `.back` link to return to list
-
-### CSS classes (from `sample.html`)
-
-- `.toolbar` — flex row with gap, use with `.primary` and `.danger` buttons
-- `.list` — unstyled list, `.list a` — flex row for items
-- `.empty` — centered muted text for empty states
-- `.back` — small muted link for navigation
-- `label` — block label wrapping input/textarea
-- `.confirm .confirm-prompt` — inline delete confirmation text
-- `.badge` — small pill for counts
-
 ## Wiring
 
 ### server.ts
@@ -127,21 +97,21 @@ For collections, create two custom elements: `{name}-list` and `{name}-detail`.
 // Import handlers
 import { get{Name}s, get{Name}, create{Name}, update{Name}, delete{Name} } from "./resources/{name}/{name}-api";
 
-// Add to routes (before "/*" catch-all)
-"/api/{names}": { GET: get{Name}s, POST: create{Name} },
-"/api/{names}/:id": { GET: get{Name}, PUT: update{Name}, DELETE: delete{Name} },
+// Add to routes (before "/*" catch-all), wrapped with loggedRequest
+"/api/{names}": { GET: loggedRequest("[api]", get{Name}s), POST: loggedRequest("[api]", create{Name}) },
+"/api/{names}/:id": { GET: loggedRequest("[api]", get{Name}), PUT: loggedRequest("[api]", update{Name}), DELETE: loggedRequest("[api]", delete{Name}) },
 
 // If real-time, add to topics Set
 const topics = new Set(["message", "{names}"]);
 ```
 
-### app.ts
+### app.tsx
 
-```ts
-// Import view (side-effect import registers the custom element)
-import "./resources/{name}/{name}-view";
+```tsx
+// Import view components
+import { {Name}List, {Name}Detail } from "./resources/{name}/{name}-view";
 
 // Add to routes()
-"/{names}": () => "<{name}-list></{name}-list>",
-"/{names}/:id": ({ id }) => `<{name}-detail data-id="${id}"></{name}-detail>`,
+"/{names}": () => <{Name}List />,
+"/{names}/:id": ({ id }) => <{Name}Detail id={id} />,
 ```
