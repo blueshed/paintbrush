@@ -8,12 +8,15 @@
  * To add a route: import the handler and add an entry to the routes table.
  * To add a WS topic: add the resource name to the `topics` set.
  */
+import { createLogger, loggedRequest } from "@blueshed/railroad";
 import homepage from "./index.html";
 import sample from "./framework/sample.html";
 import { provide, SERVER } from "./lib/shared";
 import { getMessage, putMessage } from "./resources/message/message-api";
 import { getStatus } from "./resources/status/status-api";
 import { getLogo, notFound } from "./resources/common-api";
+
+const log = createLogger("[server]");
 
 const topics = new Set(["message"]);
 
@@ -23,11 +26,11 @@ const server = Bun.serve({
   routes: {
     "/": homepage,
     "/api/message": {
-      GET: getMessage,
-      PUT: putMessage,
+      GET: loggedRequest("[api]", getMessage),
+      PUT: loggedRequest("[api]", putMessage),
     },
     "/api/status": {
-      GET: getStatus,
+      GET: loggedRequest("[api]", getStatus),
     },
     "/favicon.ico": getLogo,
     "/logo.png": getLogo,
@@ -44,9 +47,14 @@ const server = Bun.serve({
     message(ws, raw) {
       try {
         const msg = JSON.parse(String(raw));
-        if (msg.action === "opendoc" && topics.has(msg.resource))
+        if (msg.action === "opendoc" && topics.has(msg.resource)) {
           ws.subscribe(msg.resource);
-        if (msg.action === "closedoc") ws.unsubscribe(msg.resource);
+          log.debug(`ws subscribe: ${msg.resource}`);
+        }
+        if (msg.action === "closedoc") {
+          ws.unsubscribe(msg.resource);
+          log.debug(`ws unsubscribe: ${msg.resource}`);
+        }
       } catch {}
     },
   },
@@ -54,4 +62,4 @@ const server = Bun.serve({
 
 provide(SERVER, server);
 
-console.log(`→ http://localhost:${server.port}`);
+log.info(`listening on http://localhost:${server.port}`);
