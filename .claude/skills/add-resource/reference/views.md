@@ -1,44 +1,42 @@
 # View component patterns
 
-Views are JSX functional components. No shadow DOM, no custom elements. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
+Views are JSX functional components with an inline delta-doc client store. No separate store file needed. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
 
-For collections, export two components from `{name}-view.tsx`: `{Name}List` and `{Name}Detail`.
+## Singleton component
 
-## Imports
+One file: `{name}-view.tsx`. The client store is created at module level.
 
 ```tsx
-import { signal, effect } from "@blueshed/railroad/signals";
-import { when, list, text, navigate } from "@blueshed/railroad";
+import { effect } from "@blueshed/railroad/signals";
+import { createClientStore } from "@lib/delta-doc";
 import { toast } from "@lib/toast";
-// import store functions from "./{name}"
-```
 
-No JSX imports needed — `tsconfig.json` sets `jsxImportSource: "@blueshed/railroad"`.
+type {Name}Doc = { {field}: string };
 
-## Singleton component (like MessageView)
+const { data, sendDelta, init } = createClientStore<{Name}Doc>({
+  apiPath: "/api/data",
+  wsPath: "/ws",
+});
 
-```tsx
 export function {Name}View() {
-  let ta: HTMLTextAreaElement;
+  let input: HTMLInputElement;
 
-  // WS cleanup is tracked via effect's dispose scope
-  effect(() => connect{Name}());
   effect(() => {
-    const data = {name}.get();
-    if (data && ta) ta.value = data.{field};
+    const doc = data.get();
+    if (doc && input) input.value = doc.{field};
   });
-  load{Name}();
+  init();
 
   async function save() {
-    await save{Name}({ {field}: ta.value });
+    await sendDelta([{ op: "replace", path: "/{field}", value: input.value }]);
     toast("Saved");
   }
 
   return (
     <>
-      <textarea ref={(el: HTMLTextAreaElement) => { ta = el; }} onkeydown={(e: KeyboardEvent) => {
+      <input type="text" ref={(el: HTMLInputElement) => { input = el; }} onkeydown={(e: KeyboardEvent) => {
         if (e.key === "Enter" && e.metaKey) save();
-      }}></textarea>
+      }} />
       <div class="toolbar">
         <button class="primary" onclick={save}>Save</button>
       </div>
@@ -47,28 +45,44 @@ export function {Name}View() {
 }
 ```
 
-## List component (`{Name}List`)
+## Collection components
+
+One file: `{name}-view.tsx` with two exports. Store at module level, shared between list and detail.
+
+```tsx
+import { createClientStore } from "@lib/delta-doc";
+import { when, list, navigate } from "@blueshed/railroad";
+import { toast } from "@lib/toast";
+
+type {Name} = { id: string; title: string; createdAt: string };
+type {Name}Doc = { items: {Name}[] };
+
+const { data, sendDelta, init } = createClientStore<{Name}Doc>({
+  apiPath: "/{names}/api/data",
+  wsPath: "/{names}/ws",
+});
+init();
+```
+
+### List component
 
 ```tsx
 export function {Name}List() {
-  // WS cleanup tracked via effect dispose scope
-  effect(() => connect{Name}s());
-  load{Name}s();
-
   return (
     <>
       <div class="toolbar">
         <h1>{Name}s</h1>
-        <button class="primary" onclick={async () => {
-          const item = await create{Name}({ title: "Untitled" });
+        <button class="primary" onclick={() => {
+          const item = { id: crypto.randomUUID(), title: "Untitled", createdAt: new Date().toISOString() };
+          sendDelta([{ op: "add", path: "/items/-", value: item }]);
           navigate(`/{names}/${item.id}`);
         }}>+ New</button>
       </div>
       {when(
-        () => {names}.get().length > 0,
+        () => (data.get()?.items.length ?? 0) > 0,
         () => (
           <ul class="list">
-            {list({names}, (t) => t.id, (t) => (
+            {list(() => data.get()!.items, (t) => t.id, (t) => (
               <li><a href={`#/{names}/${t.id}`}>
                 <strong>{t.title}</strong>
                 <small>{new Date(t.createdAt).toLocaleDateString()}</small>
@@ -83,32 +97,20 @@ export function {Name}List() {
 }
 ```
 
-### Key points
-
-- `list()` with a key function (`t => t.id`) for efficient DOM diffing
-- `when()` toggles between list and empty state reactively
-- Links use `href="#/{names}/${id}"` — the hash router picks them up
-- `effect(() => connect{Name}s())` — the return value of `connect{Name}s()` is used as effect cleanup, disposed automatically on route change
-
-## Detail component (`{Name}Detail`)
+### Detail component
 
 ```tsx
 export function {Name}Detail({ id }: { id: string }) {
-  const item = signal<{Name} | null>(null);
-
-  load{Name}(id).then(data => {
-    if (!data) { navigate("/{names}"); return; }
-    item.set(data);
-  });
-
   return when(
-    () => item.get(),
+    () => data.get()?.items.find(n => n.id === id),
     () => {
-      const data = item.get()!;
+      const items = data.get()!.items;
+      const idx = items.findIndex(n => n.id === id);
+      const item = items[idx];
       let titleInput: HTMLInputElement;
 
       async function save() {
-        await save{Name}(id, { title: titleInput.value });
+        await sendDelta([{ op: "replace", path: `/items/${idx}/title`, value: titleInput.value }]);
         toast("Saved");
       }
 
@@ -118,21 +120,15 @@ export function {Name}Detail({ id }: { id: string }) {
           <h1>Edit {Name}</h1>
           <form onsubmit={(e: Event) => { e.preventDefault(); save(); }}>
             <label>Title
-              <input type="text" value={data.title}
-                ref={(el: HTMLInputElement) => { titleInput = el; }}
-                onkeydown={(e: KeyboardEvent) => {
-                  if (e.key === "Enter" && e.metaKey) save();
-                }} />
+              <input type="text" value={item.title}
+                ref={(el: HTMLInputElement) => { titleInput = el; }} />
             </label>
-            {/* add label+input for each field */}
             <div class="toolbar">
-              <button type="button" class="primary" onclick={save}>Save</button>
+              <button type="submit" class="primary">Save</button>
               <button type="button" class="danger" onclick={() => {
-                if (confirm("Delete this {name}?")) {
-                  remove{Name}(id);
-                  toast("Deleted", "alert");
-                  navigate("/{names}");
-                }
+                sendDelta([{ op: "remove", path: `/items/${idx}` }]);
+                toast("Deleted", "alert");
+                navigate("/{names}");
               }}>Delete</button>
             </div>
           </form>
@@ -143,42 +139,36 @@ export function {Name}Detail({ id }: { id: string }) {
 }
 ```
 
-### Key points
-
-- Props are passed directly by the router: `({ id }) => <{Name}Detail id={id} />`
-- `when()` shows nothing until the item loads, then renders the form
-- `ref` callbacks fire during element creation — refs are set before the component returns
-- Cmd+Enter to save via `onkeydown` on inputs
-- `confirm()` for delete instead of toolbar swap (simpler with JSX)
-- Toast styles: `"notify"` (default, orange) for save, `"alert"` (red) for delete
-
 ## Reactivity rules
 
-1. **Components run once.** The function body executes once per mount. Reactivity comes from signals, not re-calling the component.
-2. **Pass signals directly as JSX children** for reactive text: `<p>{count}</p>`, not `<p>{count.get()}</p>`.
-3. **Use `text()`** for computed text: `{text(() => `${first.get()} ${last.get()}`)}`.
+1. **Components run once.** Reactivity comes from signals, not re-calling the component.
+2. **Use `{() => expr}` in JSX** for reactive text — creates an effect-backed text node.
+3. **Use `text()`** for computed text outside JSX children.
 4. **Use `when()`** for conditional rendering and `list()` for collections.
-5. **Use `effect()`** to bridge signals to imperative DOM (e.g., setting textarea value).
-6. **Cleanup is automatic** — the router's dispose scope cleans up all effects created during the component's render. Use `effect(() => connectFn())` to register WS cleanup in the dispose scope.
+5. **Use `effect()`** to bridge signals to imperative DOM (e.g., setting input values).
+6. **Cleanup is automatic** — the router's dispose scope handles it.
 
-## CSS classes (from `sample.html`)
+## CSS classes (from `/sample`)
 
 - `.toolbar` — flex row with gap, use with `.primary` and `.danger` buttons
 - `.list` — unstyled list, `.list a` — flex row for items
 - `.empty` — centered muted text for empty states
 - `.back` — small muted link for navigation
 - `label` — block label wrapping input/textarea
-- `.badge` — small pill for counts
 - `.help` — muted help text
 - `.meta` — small metadata text
 
 ## Route wiring in app.tsx
 
 ```tsx
-// Import components
+import { {Name}View } from "./resources/{name}/{name}-view";
+// or for collections:
 import { {Name}List, {Name}Detail } from "./resources/{name}/{name}-view";
 
-// Add to routes()
-"/{names}": () => <{Name}List />,
-"/{names}/:id": ({ id }) => <{Name}Detail id={id} />,
+routes(app, {
+  "/{name}": () => <{Name}View />,
+  // or for collections:
+  "/{names}": () => <{Name}List />,
+  "/{names}/:id": ({ id }) => <{Name}Detail id={id} />,
+});
 ```

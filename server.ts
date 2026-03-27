@@ -1,65 +1,55 @@
 /**
- * Server — Bun.serve() with explicit routes and WebSocket hub.
+ * Server — Bun.serve() with explicit routes, delta-doc store, and WebSocket hub.
  *
- * Every route maps directly to a handler function imported from a resource.
- * The WebSocket hub subscribes clients to resource topics (opendoc/closedoc)
- * so server handlers can publish live updates via tryInject("server").
+ * The message resource uses a delta-doc server store which provides its own
+ * routes (/api/data, /ws) and broadcasts deltas over WebSocket.
  *
  * To add a route: import the handler and add an entry to the routes table.
- * To add a WS topic: add the resource name to the `topics` set.
+ * To add a delta-doc resource: create a server store and spread its routes.
  */
 import { createLogger, loggedRequest } from "@blueshed/railroad";
 import homepage from "./index.html";
 import sample from "./resources/sample.html";
-import { provide, SERVER } from "./lib/shared";
-import { getMessage, putMessage } from "./resources/message/message-api";
+import { createServerStore } from "./lib/delta-doc";
 import { getStatus } from "./resources/status/status-api";
 import { getLogo, notFound } from "./resources/common-api";
 
 const log = createLogger("[server]");
 
-const topics = new Set(["message"]);
+const dataDir = process.env.DATA_PATH ?? `${import.meta.dir}/resources/message`;
+const messageStore = await createServerStore({
+  file: `${dataDir}/message.json`,
+  channel: "message",
+  empty: { message: "Hello from Paintbrush" },
+});
 
 const server = Bun.serve({
   port: process.env.PORT || 3000,
   hostname: "0.0.0.0",
   routes: {
     "/": homepage,
-    "/api/message": {
-      GET: loggedRequest("[api]", getMessage),
-      PUT: loggedRequest("[api]", putMessage),
-    },
+    ...messageStore.routes,
     "/api/status": {
       GET: loggedRequest("[api]", getStatus),
     },
     "/favicon.ico": getLogo,
     "/logo.png": getLogo,
-    "/ws": (req) => {
-      if (server.upgrade(req)) return;
-      return new Response("Upgrade failed", { status: 400 });
-    },
     "/sample": sample,
     "/*": notFound,
   },
   websocket: {
     idleTimeout: 60,
     sendPings: true,
-    message(ws, raw) {
-      try {
-        const msg = JSON.parse(String(raw));
-        if (msg.action === "opendoc" && topics.has(msg.resource)) {
-          ws.subscribe(msg.resource);
-          log.debug(`ws subscribe: ${msg.resource}`);
-        }
-        if (msg.action === "closedoc") {
-          ws.unsubscribe(msg.resource);
-          log.debug(`ws unsubscribe: ${msg.resource}`);
-        }
-      } catch {}
+    open(ws) {
+      const channels = (ws.data as any)?.channels;
+      if (channels) {
+        for (const ch of channels) ws.subscribe(ch);
+      }
     },
+    message() {},
   },
 });
 
-provide(SERVER, server);
+messageStore.setServer(server);
 
 log.info(`listening on http://localhost:${server.port}`);
