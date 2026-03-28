@@ -6,14 +6,14 @@
 import { createLogger } from "@blueshed/railroad";
 import homepage from "./index.html";
 import sample from "./resources/sample.html";
-import { createServer } from "./lib/paintbrush-ws";
+import { createWs } from "./lib/paintbrush-ws";
 import { registerDoc, registerMethod } from "./lib/delta-doc";
 import { getLogo, notFound } from "./resources/common-api";
 import type { Message } from "./resources/message/message-api";
 import type { Status } from "./resources/status/status-api";
 
 const log = createLogger("[server]");
-const ws = createServer();
+const ws = createWs();
 
 // --- Docs (persisted, synced) ---
 

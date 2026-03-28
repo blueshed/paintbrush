@@ -8,7 +8,7 @@
  * and use publish/subscribe. They don't own the WebSocket.
  *
  * Server usage:
- *   const ws = createServer();
+ *   const ws = createWs();
  *   ws.on("ping", (msg, client, respond) => respond({ result: "pong" }));
  *   Bun.serve({ routes: { "/ws": ws.upgrade }, websocket: ws.websocket });
  *   ws.setServer(server);
@@ -31,7 +31,7 @@ export type ActionHandler = (
   respond: (result: any) => void,
 ) => any | Promise<any>;
 
-export function createServer() {
+export function createWs() {
   const log = createLogger("[ws]");
   const actions = new Map<string, ActionHandler[]>();
   let serverRef: any;

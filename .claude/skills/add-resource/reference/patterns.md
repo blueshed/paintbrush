@@ -9,11 +9,11 @@ Each resource registers with the shared paintbrush-ws server. Import the shared 
 ### Singleton
 
 ```ts
-import { createServer } from "./lib/paintbrush-ws";
+import { createWs } from "./lib/paintbrush-ws";
 import { registerDoc } from "./lib/delta-doc";
 import type { {Name} } from "./resources/{name}/{name}-api";
 
-const ws = createServer();
+const ws = createWs();
 
 const dataDir = process.env.DATA_PATH ?? `${import.meta.dir}/resources/{name}`;
 await registerDoc<{Name}>(ws, "{name}", {
