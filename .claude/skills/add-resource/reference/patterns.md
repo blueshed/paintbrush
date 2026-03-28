@@ -1,32 +1,34 @@
-# Delta-ws resource patterns
+# Delta-doc resource patterns
 
-Resources use `delta-ws.ts` for both server and client. The shared type in `{name}-api.ts` is the contract — imported by both sides.
+Resources use `delta-doc.ts` (over `paintbrush-ws.ts`) for both server and client. The shared type in `{name}-api.ts` is the contract — imported by both sides.
 
 ## Server setup (`server.ts`)
 
-Each resource gets a delta-ws doc registered with the hub. Import the shared type for type safety.
+Each resource registers with the shared paintbrush-ws server. Import the shared type for type safety.
 
 ### Singleton
 
 ```ts
-import { createHub } from "./lib/delta-ws";
+import { createServer } from "./lib/paintbrush-ws";
+import { registerDoc } from "./lib/delta-doc";
 import type { {Name} } from "./resources/{name}/{name}-api";
 
-const hub = createHub();
+const ws = createServer();
 
 const dataDir = process.env.DATA_PATH ?? `${import.meta.dir}/resources/{name}`;
-await hub.doc<{Name}>("{name}", {
+await registerDoc<{Name}>(ws, "{name}", {
   file: `${dataDir}/{name}.json`,
   empty: { /* default fields */ },
 });
 
 const server = Bun.serve({
   routes: {
-    "/ws": hub.upgrade,
+    "/ws": ws.upgrade,
     // ... other routes
   },
-  websocket: hub.websocket,
+  websocket: ws.websocket,
 });
+ws.setServer(server);
 ```
 
 ### Collection
@@ -34,9 +36,7 @@ const server = Bun.serve({
 For collections, the document shape wraps items: `{ items: {Name}[] }`:
 
 ```ts
-import type { {Name} } from "./resources/{name}/{name}-api";
-
-await hub.doc<{ items: {Name}[] }>("{names}", {
+await registerDoc<{ items: {Name}[] }>(ws, "{names}", {
   file: `${dataDir}/{names}.json`,
   empty: { items: [] },
 });
@@ -44,10 +44,12 @@ await hub.doc<{ items: {Name}[] }>("{names}", {
 
 ### Stateless methods
 
-For read-only or computed data (not persisted), use `hub.method()`:
+For read-only or computed data (not persisted), use `registerMethod()`:
 
 ```ts
-hub.method("status", (): Status => ({
+import { registerMethod } from "./lib/delta-doc";
+
+registerMethod(ws, "status", (): Status => ({
   uptime: Math.floor(process.uptime()),
   bun: Bun.version,
 }));
@@ -55,10 +57,10 @@ hub.method("status", (): Status => ({
 
 ## Client usage (in view files)
 
-Connect to the hub and open the doc:
+Connect and open the doc:
 
 ```ts
-import { connect, type DeltaOp } from "@lib/delta-ws";
+import { connect, type DeltaOp } from "@lib/delta-doc";
 
 const hub = connect("/ws");
 const {name} = hub.open<{Name}>("{name}");

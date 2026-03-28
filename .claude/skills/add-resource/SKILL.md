@@ -1,13 +1,13 @@
 ---
 name: add-resource
-description: Scaffold a new resource with shared type, delta-ws doc, and JSX view
+description: Scaffold a new resource with shared type, delta-doc doc, and JSX view
 disable-model-invocation: true
 argument-hint: [resource-name]
 ---
 
 # Add Resource
 
-Scaffold a new resource for the Paintbrush app using delta-ws.
+Scaffold a new resource for the Paintbrush app using delta-doc.
 
 ## Gather inputs
 
@@ -24,15 +24,15 @@ Use `{name}` for lowercase singular, `{Name}` for PascalCase, `{names}` for lowe
 Before generating any code, read these files to learn the exact patterns:
 
 **In this skill folder** (adaptation guides):
-- [reference/patterns.md](reference/patterns.md) — delta-ws server/client, delta ops, wiring
+- [reference/patterns.md](reference/patterns.md) — delta-doc server/client, delta ops, wiring
 - [reference/views.md](reference/views.md) — JSX functional components, singleton and collection views
 
 **Living reference** (the actual working code):
 - `resources/message/message-api.ts` — shared type (singleton)
-- `resources/message/message-view.tsx` — singleton view with delta-ws
+- `resources/message/message-view.tsx` — singleton view with delta-doc
 - `resources/graph/graph-api.ts` — shared types (multi-entity)
 - `resources/graph/graph.tsx` — complex view with list() and atomic ops
-- `lib/delta-ws.ts` — hub (server) + connect/open/call (client)
+- `lib/delta-doc.ts` — hub (server) + connect/open/call (client)
 - `server.ts` — where to register docs and methods
 - `app.tsx` — where to wire client routes and view imports
 - `resources/sample.html` — CSS class reference for UI (`/sample` route)

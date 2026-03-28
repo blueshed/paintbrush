@@ -1,23 +1,24 @@
 /**
- * Server — Bun.serve() with delta-ws hub.
+ * Server — Bun.serve() with paintbrush-ws.
  *
- * Routes serve pages. The hub handles docs and methods over one WebSocket.
+ * The WebSocket is shared infrastructure. Docs and methods register with it.
  */
 import { createLogger } from "@blueshed/railroad";
 import homepage from "./index.html";
 import sample from "./resources/sample.html";
-import { createHub } from "./lib/delta-ws";
+import { createServer } from "./lib/paintbrush-ws";
+import { registerDoc, registerMethod } from "./lib/delta-doc";
 import { getLogo, notFound } from "./resources/common-api";
 import type { Message } from "./resources/message/message-api";
 import type { Status } from "./resources/status/status-api";
 
 const log = createLogger("[server]");
-const hub = createHub();
+const ws = createServer();
 
 // --- Docs (persisted, synced) ---
 
 const dataDir = process.env.DATA_PATH ?? `${import.meta.dir}/resources/message`;
-await hub.doc<Message>("message", {
+await registerDoc<Message>(ws, "message", {
   file: `${dataDir}/message.json`,
   empty: { message: "Hello from Paintbrush" },
 });
@@ -25,7 +26,7 @@ await hub.doc<Message>("message", {
 // --- Methods (stateless RPC) ---
 
 const startedAt = Date.now();
-hub.method("status", (): Status => ({
+registerMethod(ws, "status", (): Status => ({
   dataPath: process.env.DATA_PATH ?? `${import.meta.dir}/resources`,
   persistent: !!process.env.DATA_PATH,
   uptime: Math.floor((Date.now() - startedAt) / 1000),
@@ -39,14 +40,14 @@ const server = Bun.serve({
   hostname: "0.0.0.0",
   routes: {
     "/": homepage,
-    "/ws": hub.upgrade,
+    "/ws": ws.upgrade,
     "/favicon.ico": getLogo,
     "/logo.png": getLogo,
     "/sample": sample,
     "/*": notFound,
   },
-  websocket: hub.websocket,
+  websocket: ws.websocket,
 });
 
-hub.setServer(server);
+ws.setServer(server);
 log.info(`listening on http://localhost:${server.port}`);

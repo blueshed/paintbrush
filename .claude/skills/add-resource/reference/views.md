@@ -1,6 +1,6 @@
 # View component patterns
 
-Views are JSX functional components that use delta-ws for data. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
+Views are JSX functional components that use delta-doc for data. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
 
 ## Shared type file
 
@@ -27,7 +27,7 @@ Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view). The hub connection
 
 ```tsx
 import { effect } from "@blueshed/railroad/signals";
-import { connect, type DeltaOp } from "@lib/delta-ws";
+import { connect, type DeltaOp } from "@lib/delta-doc";
 import { toast } from "@lib/toast";
 import type { {Name} } from "./{name}-api";
 
@@ -67,7 +67,7 @@ Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view with two exports). H
 ```tsx
 import { when, list } from "@blueshed/railroad";
 import { computed } from "@blueshed/railroad/signals";
-import { connect, type DeltaOp } from "@lib/delta-ws";
+import { connect, type DeltaOp } from "@lib/delta-doc";
 import { toast } from "@lib/toast";
 import type { {Name} } from "./{name}-api";
 

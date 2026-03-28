@@ -1,5 +1,5 @@
 import { effect } from "@blueshed/railroad/signals";
-import { connect } from "@lib/delta-ws";
+import { connect } from "@lib/delta-doc";
 import { toast } from "@lib/toast";
 import type { Message } from "./message-api";
 

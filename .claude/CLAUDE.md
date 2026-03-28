@@ -22,7 +22,8 @@ resources/{name}/      — one subfolder per resource
 resources/sample.html  — CSS style guide with interactive examples
 resources/sample.ts    — sample page script (feather-icons, interactivity)
 lib/                   — app-specific utilities
-  delta-ws.ts          — WebSocket hub (server) + connect/open/call (client), extensible via hub.on()
+  paintbrush-ws.ts     — shared WebSocket protocol: action routing, pub/sub, request/response
+  delta-doc.ts         — document sync over paintbrush-ws: registerDoc, registerMethod, connect/open/call
   reconnecting-ws.ts   — auto-reconnecting WebSocket (used by delta-ws)
   toast.ts             — toast notification (notify/alert)
 ```
@@ -30,7 +31,8 @@ lib/                   — app-specific utilities
 ## Conventions
 
 - **Railroad for primitives**: signals, effects, JSX, routes, logger all come from `@blueshed/railroad`
-- **Delta-ws for sync**: one shared WebSocket hub — docs (persisted, synced), methods (stateless RPC), extensible via `hub.on(action, handler)` and `hub.publish(channel, data)` for custom actions and Bun pub/sub
+- **Paintbrush-ws**: shared WebSocket protocol layer — action routing via `ws.on(action, handler)`, Bun pub/sub via `ws.publish(channel, data)`, extensible for any consumer
+- **Delta-doc for sync**: document sync over paintbrush-ws — `registerDoc(ws, name, opts)` for persisted docs, `registerMethod(ws, name, handler)` for stateless RPC, `connect("/ws")` on the client
 - **Shared types**: each resource has `{name}-api.ts` with types imported by both server and client (Bun bundles for client, imports directly for server)
 - **Resource = type + view**: `resources/{name}/{name}-api.ts` (shared type) + `resources/{name}/{name}-view.tsx` (JSX view)
 - **Server wiring**: `hub.doc<T>(name, opts)` for persisted docs, `hub.method(name, handler)` for stateless calls

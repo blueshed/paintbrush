@@ -1,6 +1,6 @@
 import { when, text } from "@blueshed/railroad";
 import { signal } from "@blueshed/railroad/signals";
-import { connect } from "@lib/delta-ws";
+import { connect } from "@lib/delta-doc";
 import type { Status } from "./status-api";
 
 const hub = connect("/ws");
