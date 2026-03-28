@@ -154,41 +154,34 @@ export interface Doc<T> {
 
 const log = createLogger("[doc]");
 const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
-let wsSetup = false;
-
-function ensureWsListeners(ws: WsClient) {
-  if (wsSetup) return;
-  wsSetup = true;
-
-  ws.on("open", () => {
-    for (const [name, entry] of openDocs) {
-      ws.send({ action: "open", doc: name }).then((state) => {
-        entry.data.set(state);
-      });
-    }
-  });
-
-  ws.on("message", (msg) => {
-    if (msg.doc && msg.ops) {
-      const entry = openDocs.get(msg.doc);
-      if (entry) {
-        const current = entry.data.peek();
-        if (current) {
-          const updated = structuredClone(current);
-          applyOps(updated, msg.ops);
-          entry.data.set(updated);
-        }
-      }
-    }
-  });
-}
 
 /** Lazily resolve the WS client — deferred so openDoc can be called at module level. */
 let _ws: WsClient | null = null;
 function ws(): WsClient {
   if (!_ws) {
     _ws = inject(WS);
-    ensureWsListeners(_ws);
+
+    _ws.on("open", () => {
+      for (const [name, entry] of openDocs) {
+        _ws!.send({ action: "open", doc: name }).then((state) => {
+          entry.data.set(state);
+        });
+      }
+    });
+
+    _ws.on("message", (msg) => {
+      if (msg.doc && msg.ops) {
+        const entry = openDocs.get(msg.doc);
+        if (entry) {
+          const current = entry.data.peek();
+          if (current) {
+            const updated = structuredClone(current);
+            applyOps(updated, msg.ops);
+            entry.data.set(updated);
+          }
+        }
+      }
+    });
   }
   return _ws;
 }
