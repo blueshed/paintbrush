@@ -1,14 +1,15 @@
 /**
- * Delta-WS — reactive document sync over WebSocket.
+ * Delta-WS — WebSocket hub with document sync.
  *
- * Server: docs (persisted JSON + broadcast) and methods (stateless RPC).
- * Client: connect, open docs, call methods — all over one WebSocket.
+ * The hub is shared WebSocket infrastructure: upgrade, message routing,
+ * publish/subscribe via Bun channels. Docs and methods are consumers.
  *
  * Usage (server):
  *   const hub = createHub();
  *   await hub.doc<Message>("message", { file: "./message.json", empty: { message: "" } });
  *   hub.method("status", () => ({ bun: Bun.version, uptime: process.uptime() }));
- *   Bun.serve({ routes: { "/ws": hub.upgrade }, websocket: hub.websocket });
+ *   const server = Bun.serve({ routes: { "/ws": hub.upgrade }, websocket: hub.websocket });
+ *   hub.setServer(server);
  *
  * Usage (client):
  *   const hub = connect("/ws");
@@ -80,27 +81,75 @@ export function applyOps(doc: any, ops: DeltaOp[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// Server
+// Server — Hub (shared WebSocket infrastructure)
 // ---------------------------------------------------------------------------
 
-interface DocStore {
-  getDoc(): any;
-  applyAndBroadcast(ops: DeltaOp[], ws: any): void;
-}
+type ActionHandler = (msg: any, ws: any, respond: (result: any) => void) => any | Promise<any>;
+type MethodHandler = (params: any, ws: any) => any | Promise<any>;
 
 interface DocOptions<T> {
   file: string;
   empty: T;
 }
 
-type MethodHandler = (params: any, ws: any) => any | Promise<any>;
-
 export function createHub() {
   const log = createLogger("[hub]");
-  const docs = new Map<string, DocStore>();
+  const actions = new Map<string, ActionHandler>();
+  let serverRef: any;
+
+  // --- Built-in actions ---
+
+  // call: stateless RPC
   const methods = new Map<string, MethodHandler>();
+  actions.set("call", async (msg, ws, respond) => {
+    const handler = methods.get(msg.method);
+    if (!handler) {
+      respond({ error: { code: -1, message: `Unknown method: ${msg.method}` } });
+      return;
+    }
+    log.debug(`call ${msg.method}`);
+    respond({ result: await handler(msg.params, ws) });
+  });
+
+  // open/delta/close: document sync
+  const docs = new Map<string, {
+    getDoc(): any;
+    applyAndBroadcast(ops: DeltaOp[]): void;
+  }>();
+
+  actions.set("open", (msg, ws, respond) => {
+    const store = docs.get(msg.doc);
+    if (!store) { respond({ error: { code: -1, message: `Unknown doc: ${msg.doc}` } }); return; }
+    ws.subscribe(msg.doc);
+    respond({ result: store.getDoc() });
+    log.debug(`${msg.doc} opened`);
+  });
+
+  actions.set("delta", (msg, _ws, respond) => {
+    const store = docs.get(msg.doc);
+    if (!store) { respond({ error: { code: -1, message: `Unknown doc: ${msg.doc}` } }); return; }
+    store.applyAndBroadcast(msg.ops);
+    respond({ result: { ack: true } });
+  });
+
+  actions.set("close", (msg, ws, respond) => {
+    ws.unsubscribe(msg.doc);
+    respond({ result: { ack: true } });
+    log.debug(`${msg.doc} closed`);
+  });
 
   return {
+    /** Publish to a Bun channel — any subscriber receives the message. */
+    publish(channel: string, data: any) {
+      serverRef?.publish(channel, JSON.stringify(data));
+    },
+
+    /** Register a custom action handler. */
+    on(action: string, handler: ActionHandler) {
+      actions.set(action, handler);
+    },
+
+    /** Register a persisted document. */
     async doc<T>(name: string, opts: DocOptions<T>) {
       const dataFile = Bun.file(opts.file);
       let doc: T = (await dataFile.exists())
@@ -109,19 +158,19 @@ export function createHub() {
 
       log.info(`loaded ${name} from ${opts.file}`);
 
+      const hub = this;
       docs.set(name, {
         getDoc: () => doc,
-        applyAndBroadcast(ops, ws) {
+        applyAndBroadcast(ops) {
           applyOps(doc, ops);
           Bun.write(dataFile, JSON.stringify(doc, null, 2));
-          ws.publish(name, JSON.stringify({ doc: name, ops }));
-          log.debug(
-            `${name} delta [${ops.map((o) => `${o.op} ${o.path}`).join(", ")}]`,
-          );
+          hub.publish(name, { doc: name, ops });
+          log.debug(`${name} delta [${ops.map((o) => `${o.op} ${o.path}`).join(", ")}]`);
         },
       });
     },
 
+    /** Register a stateless RPC method. */
     method(name: string, handler: MethodHandler) {
       methods.set(name, handler);
       log.info(`method ${name}`);
@@ -143,67 +192,17 @@ export function createHub() {
         const { id, action } = msg;
 
         try {
-          if (action === "call") {
-            const handler = methods.get(msg.method);
-            if (!handler) {
-              if (id) ws.send(JSON.stringify({ id, error: { code: -1, message: `Unknown method: ${msg.method}` } }));
-              return;
-            }
-            log.debug(`call ${msg.method}`);
-            const result = await handler(msg.params, ws);
-            if (id) ws.send(JSON.stringify({ id, result }));
+          const handler = actions.get(action);
+          if (!handler) {
+            if (id) ws.send(JSON.stringify({ id, error: { code: -1, message: `Unknown action: ${action}` } }));
             return;
           }
-
-          const docName = msg.doc;
-          const store = docs.get(docName);
-          if (!store) {
-            if (id)
-              ws.send(
-                JSON.stringify({
-                  id,
-                  error: { code: -1, message: `Unknown doc: ${docName}` },
-                }),
-              );
-            return;
-          }
-
-          switch (action) {
-            case "open":
-              ws.subscribe(docName);
-              if (id)
-                ws.send(JSON.stringify({ id, result: store.getDoc() }));
-              log.debug(`${docName} opened`);
-              break;
-            case "delta":
-              store.applyAndBroadcast(msg.ops, ws);
-              if (id)
-                ws.send(JSON.stringify({ id, result: { ack: true } }));
-              break;
-            case "close":
-              ws.unsubscribe(docName);
-              if (id)
-                ws.send(JSON.stringify({ id, result: { ack: true } }));
-              log.debug(`${docName} closed`);
-              break;
-            default:
-              if (id)
-                ws.send(
-                  JSON.stringify({
-                    id,
-                    error: {
-                      code: -1,
-                      message: `Unknown action: ${action}`,
-                    },
-                  }),
-                );
-          }
+          await handler(msg, ws, (response: any) => {
+            if (id) ws.send(JSON.stringify({ id, ...response }));
+          });
         } catch (err: any) {
           log.error(`error: ${err.message}`);
-          if (id)
-            ws.send(
-              JSON.stringify({ id, error: { code: -1, message: err.message } }),
-            );
+          if (id) ws.send(JSON.stringify({ id, error: { code: -1, message: err.message } }));
         }
       },
       close() {
@@ -211,8 +210,8 @@ export function createHub() {
       },
     },
 
-    setServer(_s: any) {
-      /* reserved for future use */
+    setServer(s: any) {
+      serverRef = s;
     },
   };
 }
@@ -296,7 +295,7 @@ function createClientHub(wsPath: string) {
     return new Promise((resolve, reject) => {
       const id = nextId++;
       pending.set(id, { resolve, reject });
-      log.debug(`#${id} ${msg.action} ${msg.doc}${msg.ops ? ` [${msg.ops.map((o: DeltaOp) => `${o.op} ${o.path}`).join(", ")}]` : ""}`);
+      log.debug(`#${id} ${msg.action} ${msg.doc ?? msg.method ?? ""}${msg.ops ? ` [${msg.ops.map((o: DeltaOp) => `${o.op} ${o.path}`).join(", ")}]` : ""}`);
       ws.send(JSON.stringify({ ...msg, id }));
     });
   }

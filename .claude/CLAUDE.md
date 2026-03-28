@@ -22,7 +22,7 @@ resources/{name}/      — one subfolder per resource
 resources/sample.html  — CSS style guide with interactive examples
 resources/sample.ts    — sample page script (feather-icons, interactivity)
 lib/                   — app-specific utilities
-  delta-ws.ts          — hub (server) + connect/open/call (client), delta ops, WS sync
+  delta-ws.ts          — WebSocket hub (server) + connect/open/call (client), extensible via hub.on()
   reconnecting-ws.ts   — auto-reconnecting WebSocket (used by delta-ws)
   toast.ts             — toast notification (notify/alert)
 ```
@@ -30,7 +30,7 @@ lib/                   — app-specific utilities
 ## Conventions
 
 - **Railroad for primitives**: signals, effects, JSX, routes, logger all come from `@blueshed/railroad`
-- **Delta-ws for sync**: everything goes through one WebSocket — docs (persisted, synced) and methods (stateless RPC)
+- **Delta-ws for sync**: one shared WebSocket hub — docs (persisted, synced), methods (stateless RPC), extensible via `hub.on(action, handler)` and `hub.publish(channel, data)` for custom actions and Bun pub/sub
 - **Shared types**: each resource has `{name}-api.ts` with types imported by both server and client (Bun bundles for client, imports directly for server)
 - **Resource = type + view**: `resources/{name}/{name}-api.ts` (shared type) + `resources/{name}/{name}-view.tsx` (JSX view)
 - **Server wiring**: `hub.doc<T>(name, opts)` for persisted docs, `hub.method(name, handler)` for stateless calls
