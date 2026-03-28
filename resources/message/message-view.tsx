@@ -1,23 +1,21 @@
 import { effect } from "@blueshed/railroad/signals";
-import { createClientStore } from "@lib/delta-doc";
+import { connect } from "@lib/delta-ws";
 import { toast } from "@lib/toast";
+import type { Message } from "./message-api";
 
-const { data, sendDelta, init } = createClientStore<{ message: string }>({
-  apiPath: "/api/data",
-  wsPath: "/ws",
-});
+const hub = connect("/ws");
+const message = hub.open<Message>("message");
 
 export function MessageView() {
   let ta: HTMLTextAreaElement;
 
   effect(() => {
-    const msg = data.get();
-    if (msg && ta) ta.value = msg.message;
+    const doc = message.data.get();
+    if (doc && ta) ta.value = doc.message;
   });
-  init();
 
-  async function save() {
-    await sendDelta([{ op: "replace", path: "/message", value: ta.value }]);
+  function save() {
+    message.send([{ op: "replace", path: "/message", value: ta.value }]);
     toast("Saved");
   }
 

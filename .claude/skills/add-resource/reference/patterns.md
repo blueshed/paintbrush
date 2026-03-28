@@ -1,111 +1,104 @@
-# Delta-doc resource patterns
+# Delta-ws resource patterns
 
-Resources use `delta-doc.ts` for both server and client. No separate API file or store file needed — delta-doc provides routes, persistence, WebSocket broadcasting, and reactive signals.
+Resources use `delta-ws.ts` for both server and client. The shared type in `{name}-api.ts` is the contract — imported by both sides.
 
 ## Server setup (`server.ts`)
 
-Each resource gets a delta-doc server store. Spread its routes into `Bun.serve()` and call `setServer()` after.
+Each resource gets a delta-ws doc registered with the hub. Import the shared type for type safety.
 
 ### Singleton
 
 ```ts
-import { createServerStore } from "./lib/delta-doc";
+import { createHub } from "./lib/delta-ws";
+import type { {Name} } from "./resources/{name}/{name}-api";
+
+const hub = createHub();
 
 const dataDir = process.env.DATA_PATH ?? `${import.meta.dir}/resources/{name}`;
-const {name}Store = await createServerStore({
+await hub.doc<{Name}>("{name}", {
   file: `${dataDir}/{name}.json`,
-  channel: "{name}",
   empty: { /* default fields */ },
 });
 
 const server = Bun.serve({
   routes: {
-    ...{name}Store.routes,  // adds /api/data and /ws
+    "/ws": hub.upgrade,
     // ... other routes
   },
-  websocket: {
-    open(ws) {
-      const channels = (ws.data as any)?.channels;
-      if (channels) for (const ch of channels) ws.subscribe(ch);
-    },
-    message() {},
-  },
+  websocket: hub.websocket,
 });
-
-{name}Store.setServer(server);
 ```
 
 ### Collection
 
-For collections, the document shape is `{ items: {Name}[] }`:
+For collections, the document shape wraps items: `{ items: {Name}[] }`:
 
 ```ts
-const {name}Store = await createServerStore({
+import type { {Name} } from "./resources/{name}/{name}-api";
+
+await hub.doc<{ items: {Name}[] }>("{names}", {
   file: `${dataDir}/{names}.json`,
-  channel: "{names}",
   empty: { items: [] },
-  prefix: "/{names}",  // routes at /{names}/api/data, /{names}/ws
 });
 ```
 
-### Multiple resources
+### Stateless methods
 
-Spread multiple stores into routes:
+For read-only or computed data (not persisted), use `hub.method()`:
 
 ```ts
-const server = Bun.serve({
-  routes: {
-    ...messageStore.routes,
-    ...{name}Store.routes,
-    // ...
-  },
-});
-
-messageStore.setServer(server);
-{name}Store.setServer(server);
+hub.method("status", (): Status => ({
+  uptime: Math.floor(process.uptime()),
+  bun: Bun.version,
+}));
 ```
 
-## Client store (inline in view)
+## Client usage (in view files)
 
-Create the client store at module level in the view file:
+Connect to the hub and open the doc:
 
 ```ts
-import { createClientStore } from "@lib/delta-doc";
+import { connect, type DeltaOp } from "@lib/delta-ws";
 
-const { data, sendDelta, init } = createClientStore<{DocType}>({
-  apiPath: "/api/data",       // or "/{names}/api/data" with prefix
-  wsPath: "/ws",              // or "/{names}/ws" with prefix
+const hub = connect("/ws");
+const {name} = hub.open<{Name}>("{name}");
+
+// Read: {name}.data is a Signal<T | null>
+effect(() => {
+  const doc = {name}.data.get();
+  if (doc) console.log(doc.{field});
 });
-```
 
-Returns:
-- `data` — `Signal<T | null>`, reactive document state
-- `sendDelta(ops)` — POST delta operations to the server
-- `init()` — fetch initial data, call once
-- `dataVersion` — `Signal<number>`, increments on each delta
-- `connected` — `Signal<boolean>`, WebSocket connection state
+// Write: {name}.send(ops) sends delta ops
+{name}.send([{ op: "replace", path: "/{field}", value: "new value" }]);
+
+// Stateless call:
+const status = await hub.call<Status>("status");
+```
 
 ## Delta operations
 
-Delta ops follow JSON Patch-like semantics:
+Three ops, JSON Pointer paths (`/`-separated, numeric for array index, `-` for append):
 
 | Op | Usage | Example |
 |----|-------|---------|
-| `replace` | Update a field | `{ op: "replace", path: "/title", value: "New" }` |
+| `replace` | Set a value at path | `{ op: "replace", path: "/title", value: "New" }` |
 | `add` | Append to array | `{ op: "add", path: "/items/-", value: item }` |
-| `remove` | Delete field or array item | `{ op: "remove", path: "/items/2" }` |
+| `remove` | Delete by index | `{ op: "remove", path: "/items/2" }` |
 
-### Collection CRUD via deltas
+Multiple ops in one `send()` are atomic — applied, persisted, and broadcast together.
+
+### Collection CRUD via delta ops
 
 ```ts
 // Create — append to items array
-sendDelta([{ op: "add", path: "/items/-", value: newItem }]);
+{name}.send([{ op: "add", path: "/items/-", value: newItem }]);
 
 // Update — replace field at index
-sendDelta([{ op: "replace", path: `/items/${idx}/title`, value: "Updated" }]);
+{name}.send([{ op: "replace", path: `/items/${idx}/title`, value: "Updated" }]);
 
 // Delete — remove item at index
-sendDelta([{ op: "remove", path: `/items/${idx}` }]);
+{name}.send([{ op: "remove", path: `/items/${idx}` }]);
 ```
 
 ### Item identity
@@ -123,7 +116,7 @@ const item = {
 Find items by id, get index for delta paths:
 
 ```ts
-const items = data.get()!.items;
+const items = {name}.data.get()!.items;
 const idx = items.findIndex(n => n.id === id);
 ```
 

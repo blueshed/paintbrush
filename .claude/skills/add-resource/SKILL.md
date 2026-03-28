@@ -1,13 +1,13 @@
 ---
 name: add-resource
-description: Scaffold a new resource with delta-doc server store and JSX view
+description: Scaffold a new resource with shared type, delta-ws doc, and JSX view
 disable-model-invocation: true
 argument-hint: [resource-name]
 ---
 
 # Add Resource
 
-Scaffold a new resource for the Paintbrush app using delta-doc.
+Scaffold a new resource for the Paintbrush app using delta-ws.
 
 ## Gather inputs
 
@@ -24,13 +24,16 @@ Use `{name}` for lowercase singular, `{Name}` for PascalCase, `{names}` for lowe
 Before generating any code, read these files to learn the exact patterns:
 
 **In this skill folder** (adaptation guides):
-- [reference/patterns.md](reference/patterns.md) — delta-doc server store, client store, delta ops, wiring
+- [reference/patterns.md](reference/patterns.md) — delta-ws server/client, delta ops, wiring
 - [reference/views.md](reference/views.md) — JSX functional components, singleton and collection views
 
 **Living reference** (the actual working code):
-- `resources/message/message-view.tsx` — singleton view with inline client store
-- `lib/delta-doc.ts` — server and client store factories, delta ops
-- `server.ts` — where to wire server stores and spread routes
+- `resources/message/message-api.ts` — shared type (singleton)
+- `resources/message/message-view.tsx` — singleton view with delta-ws
+- `resources/graph/graph-api.ts` — shared types (multi-entity)
+- `resources/graph/graph.tsx` — complex view with list() and atomic ops
+- `lib/delta-ws.ts` — hub (server) + connect/open/call (client)
+- `server.ts` — where to register docs and methods
 - `app.tsx` — where to wire client routes and view imports
 - `resources/sample.html` — CSS class reference for UI (`/sample` route)
 
@@ -38,12 +41,13 @@ Before generating any code, read these files to learn the exact patterns:
 
 Each resource is a subfolder under `resources/`:
 
-1. `resources/{name}/{name}-view.tsx` — JSX view with inline client store (singleton: one export; collection: `{Name}List` + `{Name}Detail`)
+1. `resources/{name}/{name}-api.ts` — shared type (imported by both server and client)
+2. `resources/{name}/{name}-view.tsx` — JSX view using `hub.open()` for docs
 
 ## Wire files
 
-2. `server.ts` — create delta-doc server store, spread its routes, call `setServer()` after `Bun.serve()`
-3. `app.tsx` — import view component(s), add client routes
+3. `server.ts` — register doc with `hub.doc<T>(name, opts)`, import shared type
+4. `app.tsx` — import view component(s), add client routes
 
 ## Verify
 

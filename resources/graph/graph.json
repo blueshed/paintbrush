@@ -1,0 +1,65 @@
+{
+  "activities": [
+    {
+      "id": "a1",
+      "name": "Code Review"
+    },
+    {
+      "id": "a2",
+      "name": "Testing"
+    },
+    {
+      "id": "a3",
+      "name": "Deployment"
+    },
+    {
+      "id": "f2e03c1f-9ef9-43ad-8210-ee79e1215c93",
+      "name": "Foo"
+    }
+  ],
+  "roles": [
+    {
+      "id": "r1",
+      "name": "Developer",
+      "activities": [
+        "a1",
+        "a2"
+      ]
+    },
+    {
+      "id": "r2",
+      "name": "Tester",
+      "activities": [
+        "a2",
+        "a3"
+      ]
+    },
+    {
+      "id": "e878797d-33db-4d14-9c81-e046af15475c",
+      "name": "Bar",
+      "activities": [
+        "f2e03c1f-9ef9-43ad-8210-ee79e1215c93"
+      ]
+    }
+  ],
+  "persons": [
+    {
+      "id": "p1",
+      "name": "Alice",
+      "primaryRole": "r1",
+      "roles": [
+        "r1"
+      ]
+    },
+    {
+      "id": "p2",
+      "name": "Bob",
+      "primaryRole": "r1",
+      "roles": [
+        "e878797d-33db-4d14-9c81-e046af15475c",
+        "r1",
+        "r2"
+      ]
+    }
+  ]
+}

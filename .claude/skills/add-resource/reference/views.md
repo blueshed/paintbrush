@@ -1,34 +1,49 @@
 # View component patterns
 
-Views are JSX functional components with an inline delta-doc client store. No separate store file needed. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
+Views are JSX functional components that use delta-ws for data. Railroad's router manages dispose scopes automatically — effects created during component render are cleaned up on route change.
+
+## Shared type file
+
+Every resource starts with a shared type in `{name}-api.ts`:
+
+```ts
+/** {Name} — shared type, used by both server and client. */
+export type {Name} = { {field}: string };
+```
+
+For collections:
+
+```ts
+export type {Name} = {
+  id: string;
+  {field}: string;
+  createdAt: string;
+};
+```
 
 ## Singleton component
 
-One file: `{name}-view.tsx`. The client store is created at module level.
+Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view). The hub connection and doc are created at module level.
 
 ```tsx
 import { effect } from "@blueshed/railroad/signals";
-import { createClientStore } from "@lib/delta-doc";
+import { connect, type DeltaOp } from "@lib/delta-ws";
 import { toast } from "@lib/toast";
+import type { {Name} } from "./{name}-api";
 
-type {Name}Doc = { {field}: string };
-
-const { data, sendDelta, init } = createClientStore<{Name}Doc>({
-  apiPath: "/api/data",
-  wsPath: "/ws",
-});
+const hub = connect("/ws");
+const {name} = hub.open<{Name}>("{name}");
 
 export function {Name}View() {
   let input: HTMLInputElement;
 
   effect(() => {
-    const doc = data.get();
+    const doc = {name}.data.get();
     if (doc && input) input.value = doc.{field};
   });
-  init();
 
-  async function save() {
-    await sendDelta([{ op: "replace", path: "/{field}", value: input.value }]);
+  function save() {
+    {name}.send([{ op: "replace", path: "/{field}", value: input.value }]);
     toast("Saved");
   }
 
@@ -47,21 +62,18 @@ export function {Name}View() {
 
 ## Collection components
 
-One file: `{name}-view.tsx` with two exports. Store at module level, shared between list and detail.
+Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view with two exports). Hub and doc at module level, shared between list and detail.
 
 ```tsx
-import { createClientStore } from "@lib/delta-doc";
-import { when, list, navigate } from "@blueshed/railroad";
+import { when, list } from "@blueshed/railroad";
+import { computed } from "@blueshed/railroad/signals";
+import { connect, type DeltaOp } from "@lib/delta-ws";
 import { toast } from "@lib/toast";
+import type { {Name} } from "./{name}-api";
 
-type {Name} = { id: string; title: string; createdAt: string };
-type {Name}Doc = { items: {Name}[] };
-
-const { data, sendDelta, init } = createClientStore<{Name}Doc>({
-  apiPath: "/{names}/api/data",
-  wsPath: "/{names}/ws",
-});
-init();
+const hub = connect("/ws");
+const {names} = hub.open<{ items: {Name}[] }>("{names}");
+const items = computed<{Name}[]>(() => {names}.data.get()?.items ?? []);
 ```
 
 ### List component
@@ -74,15 +86,15 @@ export function {Name}List() {
         <h1>{Name}s</h1>
         <button class="primary" onclick={() => {
           const item = { id: crypto.randomUUID(), title: "Untitled", createdAt: new Date().toISOString() };
-          sendDelta([{ op: "add", path: "/items/-", value: item }]);
+          {names}.send([{ op: "add", path: "/items/-", value: item }]);
           navigate(`/{names}/${item.id}`);
         }}>+ New</button>
       </div>
       {when(
-        () => (data.get()?.items.length ?? 0) > 0,
+        () => (items.get().length) > 0,
         () => (
           <ul class="list">
-            {list(() => data.get()!.items, (t) => t.id, (t) => (
+            {list(items, (t: {Name}) => (
               <li><a href={`#/{names}/${t.id}`}>
                 <strong>{t.title}</strong>
                 <small>{new Date(t.createdAt).toLocaleDateString()}</small>
@@ -102,15 +114,15 @@ export function {Name}List() {
 ```tsx
 export function {Name}Detail({ id }: { id: string }) {
   return when(
-    () => data.get()?.items.find(n => n.id === id),
+    () => {names}.data.get()?.items.find(n => n.id === id),
     () => {
-      const items = data.get()!.items;
+      const items = {names}.data.get()!.items;
       const idx = items.findIndex(n => n.id === id);
       const item = items[idx];
       let titleInput: HTMLInputElement;
 
-      async function save() {
-        await sendDelta([{ op: "replace", path: `/items/${idx}/title`, value: titleInput.value }]);
+      function save() {
+        {names}.send([{ op: "replace", path: `/items/${idx}/title`, value: titleInput.value }]);
         toast("Saved");
       }
 
@@ -126,7 +138,7 @@ export function {Name}Detail({ id }: { id: string }) {
             <div class="toolbar">
               <button type="submit" class="primary">Save</button>
               <button type="button" class="danger" onclick={() => {
-                sendDelta([{ op: "remove", path: `/items/${idx}` }]);
+                {names}.send([{ op: "remove", path: `/items/${idx}` }]);
                 toast("Deleted", "alert");
                 navigate("/{names}");
               }}>Delete</button>
@@ -142,10 +154,10 @@ export function {Name}Detail({ id }: { id: string }) {
 ## Reactivity rules
 
 1. **Components run once.** Reactivity comes from signals, not re-calling the component.
-2. **Use `{() => expr}` in JSX** for reactive text — creates an effect-backed text node.
-3. **Use `text()`** for computed text outside JSX children.
-4. **Use `when()`** for conditional rendering and `list()` for collections.
-5. **Use `effect()`** to bridge signals to imperative DOM (e.g., setting input values).
+2. **`doc.data` is a `Signal<T | null>`.** Use `.get()` in effects to track, `.peek()` in event handlers.
+3. **Use `when()`** for conditional rendering and `list()` for collections.
+4. **Use `effect()`** to bridge signals to imperative DOM (e.g., setting input values).
+5. **Use `computed()`** to derive list signals from the doc: `computed(() => doc.data.get()?.items ?? [])`.
 6. **Cleanup is automatic** — the router's dispose scope handles it.
 
 ## CSS classes (from `/sample`)

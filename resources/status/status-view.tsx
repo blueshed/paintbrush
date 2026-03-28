@@ -1,5 +1,14 @@
 import { when, text } from "@blueshed/railroad";
-import { status, loadStatus } from "./status";
+import { signal } from "@blueshed/railroad/signals";
+import { connect } from "@lib/delta-ws";
+import type { Status } from "./status-api";
+
+const hub = connect("/ws");
+const status = signal<Status | null>(null);
+
+function loadStatus() {
+  hub.call<Status>("status").then((s) => status.set(s));
+}
 
 export function StatusView() {
   loadStatus();
