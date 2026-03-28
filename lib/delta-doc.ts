@@ -27,6 +27,7 @@
  * Multiple ops in one send() are atomic — applied, persisted, and broadcast together.
  */
 import { createLogger, signal } from "@blueshed/railroad";
+import { key, inject } from "@blueshed/railroad/shared";
 import { type ActionHandler, connectClient } from "./paintbrush-ws";
 
 // ---------------------------------------------------------------------------
@@ -146,9 +147,10 @@ export function registerMethod(
 // Client — open docs and call methods via paintbrush-ws
 // ---------------------------------------------------------------------------
 
-const clients = new Map<string, ReturnType<typeof createDeltaClient>>();
+export type DeltaClient = ReturnType<typeof createDeltaClient>;
+export const HUB = key<DeltaClient>("hub");
 
-function createDeltaClient(wsPath: string) {
+export function createDeltaClient(wsPath: string) {
   const ws = connectClient(wsPath);
   const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
 
@@ -210,11 +212,7 @@ function createDeltaClient(wsPath: string) {
   };
 }
 
-export function connect(wsPath: string = "/ws") {
-  let client = clients.get(wsPath);
-  if (!client) {
-    client = createDeltaClient(wsPath);
-    clients.set(wsPath, client);
-  }
-  return client;
+/** Inject the hub provided by app.tsx. */
+export function hub(): DeltaClient {
+  return inject(HUB);
 }

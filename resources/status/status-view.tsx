@@ -1,13 +1,13 @@
 import { when, text } from "@blueshed/railroad";
 import { signal } from "@blueshed/railroad/signals";
-import { connect } from "@lib/delta-doc";
+import { hub } from "@lib/delta-doc";
 import type { Status } from "./status-api";
 
-const hub = connect("/ws");
+const client = hub();
 const status = signal<Status | null>(null);
 
 function loadStatus() {
-  hub.call<Status>("status").then((s) => status.set(s));
+  client.call<Status>("status").then((s) => status.set(s));
 }
 
 export function StatusView() {
