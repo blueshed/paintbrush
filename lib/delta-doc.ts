@@ -5,18 +5,26 @@
  * Client: open docs and call methods via a paintbrush-ws client.
  *
  * Usage (server):
- *   import { createServer } from "./paintbrush-ws";
- *   const ws = createServer();
- *   await registerDoc<Message>(ws, "message", { file: "./message.json", empty: { message: "" } });
+ *   import { createWs } from "./paintbrush-ws";
+ *   const ws = createWs();
+ *   const msg = await registerDoc<Message>(ws, "message", { file: "./message.json", empty: { message: "" } });
  *   registerMethod(ws, "status", () => ({ bun: Bun.version }));
  *   const server = Bun.serve({ routes: { "/ws": ws.upgrade }, websocket: ws.websocket });
  *   ws.setServer(server);
  *
+ *   // Server-side doc access (returned from registerDoc):
+ *   msg.getDoc()                                             // read current state
+ *   msg.setDoc(newDoc)                                       // replace state in memory
+ *   msg.persist()                                            // write to disk
+ *   msg.applyAndBroadcast([{ op: "replace", path: "/message", value: "hi" }]) // apply + broadcast + persist
+ *
  * Usage (client):
  *   const hub = connect("/ws");
  *   const message = hub.open<Message>("message");
- *   effect(() => console.log(message.data.get()));           // reactive reads
- *   message.send([{ op: "replace", path: "/message", value: "hello" }]); // writes
+ *   await message.ready;                                      // wait for initial fetch
+ *   effect(() => console.log(message.data.get()));            // reactive reads
+ *   effect(() => console.log("v", message.dataVersion.get())); // version counter (increments on every update)
+ *   message.send([{ op: "replace", path: "/message", value: "hello" }]); // writes (no optimistic update — server broadcasts back via publishToSelf)
  *   const status = await hub.call<Status>("status");          // stateless RPC
  *
  * Delta ops (JSON Pointer paths, `/`-separated, numeric for array index, `-` for append):
@@ -105,6 +113,17 @@ export async function registerDoc<T>(
 
   log.info(`loaded from ${opts.file}`);
 
+  async function persist() {
+    await Bun.write(dataFile, JSON.stringify(doc, null, 2));
+  }
+
+  function applyAndBroadcast(ops: DeltaOp[]) {
+    applyOps(doc, ops);
+    log.info(`delta [${ops.map((o) => `${o.op} ${o.path}`).join(", ")}]`);
+    ws.publish(name, { doc: name, ops });
+    persist();
+  }
+
   ws.on("open", (msg, client, respond) => {
     if (msg.doc !== name) return;
     client.subscribe(name);
@@ -114,11 +133,8 @@ export async function registerDoc<T>(
 
   ws.on("delta", (msg, _client, respond) => {
     if (msg.doc !== name) return;
-    applyOps(doc, msg.ops);
-    Bun.write(dataFile, JSON.stringify(doc, null, 2));
-    ws.publish(name, { doc: name, ops: msg.ops });
+    applyAndBroadcast(msg.ops);
     respond({ result: { ack: true } });
-    log.debug(`delta [${msg.ops.map((o: DeltaOp) => `${o.op} ${o.path}`).join(", ")}]`);
   });
 
   ws.on("close", (msg, client, respond) => {
@@ -127,6 +143,13 @@ export async function registerDoc<T>(
     respond({ result: { ack: true } });
     log.debug("closed");
   });
+
+  return {
+    getDoc(): T { return doc; },
+    setDoc(d: T) { doc = d; },
+    persist,
+    applyAndBroadcast,
+  };
 }
 
 /** Register a stateless RPC method with the WebSocket server. */
@@ -149,11 +172,13 @@ export function registerMethod(
 
 export interface Doc<T> {
   data: ReturnType<typeof signal<T | null>>;
+  dataVersion: ReturnType<typeof signal<number>>;
+  ready: Promise<void>;
   send: (ops: DeltaOp[]) => Promise<any>;
 }
 
 const log = createLogger("[doc]");
-const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
+const openDocs = new Map<string, { data: ReturnType<typeof signal<any>>; dataVersion: ReturnType<typeof signal<number>> }>();
 
 /** Lazily resolve the WS client — deferred so openDoc can be called at module level. */
 let _ws: WsClient | null = null;
@@ -165,6 +190,7 @@ function ws(): WsClient {
       for (const [name, entry] of openDocs) {
         _ws!.send({ action: "open", doc: name }).then((state) => {
           entry.data.set(state);
+          entry.dataVersion.set(entry.dataVersion.peek() + 1);
         });
       }
     });
@@ -178,6 +204,7 @@ function ws(): WsClient {
             const updated = structuredClone(current);
             applyOps(updated, msg.ops);
             entry.data.set(updated);
+            entry.dataVersion.set(entry.dataVersion.peek() + 1);
           }
         }
       }
@@ -189,13 +216,18 @@ function ws(): WsClient {
 /** Open a persisted doc. Safe to call at module level — WS is resolved lazily. */
 export function openDoc<T>(name: string): Doc<T> {
   const data = signal<T | null>(null);
-  openDocs.set(name, { data });
+  const dataVersion = signal(0);
+  openDocs.set(name, { data, dataVersion });
+
+  let readyResolve: () => void;
+  const ready = new Promise<void>((r) => { readyResolve = r; });
 
   // Defer the initial fetch to next microtask (after provide() has run)
   queueMicrotask(() => {
     try {
       ws().send({ action: "open", doc: name }).then((state) => {
         data.set(state as T);
+        readyResolve();
       });
     } catch (err: any) {
       log.error(`openDoc("${name}"): ${err.message}`);
@@ -204,13 +236,9 @@ export function openDoc<T>(name: string): Doc<T> {
 
   return {
     data,
+    dataVersion,
+    ready,
     send(ops: DeltaOp[]) {
-      const current = data.peek();
-      if (current) {
-        const updated = structuredClone(current);
-        applyOps(updated, ops);
-        data.set(updated);
-      }
       return ws().send({ action: "delta", doc: name, ops });
     },
   };
