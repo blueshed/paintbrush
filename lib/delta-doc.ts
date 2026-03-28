@@ -152,6 +152,7 @@ export interface Doc<T> {
   send: (ops: DeltaOp[]) => Promise<any>;
 }
 
+const log = createLogger("[doc]");
 const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
 let wsSetup = false;
 
@@ -182,16 +183,30 @@ function ensureWsListeners(ws: WsClient) {
   });
 }
 
-/** Open a persisted doc. Injects the WS connection provided by app.tsx. */
-export function openDoc<T>(name: string): Doc<T> {
-  const ws = inject(WS);
-  ensureWsListeners(ws);
+/** Lazily resolve the WS client — deferred so openDoc can be called at module level. */
+let _ws: WsClient | null = null;
+function ws(): WsClient {
+  if (!_ws) {
+    _ws = inject(WS);
+    ensureWsListeners(_ws);
+  }
+  return _ws;
+}
 
+/** Open a persisted doc. Safe to call at module level — WS is resolved lazily. */
+export function openDoc<T>(name: string): Doc<T> {
   const data = signal<T | null>(null);
   openDocs.set(name, { data });
 
-  ws.send({ action: "open", doc: name }).then((state) => {
-    data.set(state as T);
+  // Defer the initial fetch to next microtask (after provide() has run)
+  queueMicrotask(() => {
+    try {
+      ws().send({ action: "open", doc: name }).then((state) => {
+        data.set(state as T);
+      });
+    } catch (err: any) {
+      log.error(`openDoc("${name}"): ${err.message}`);
+    }
   });
 
   return {
@@ -203,12 +218,12 @@ export function openDoc<T>(name: string): Doc<T> {
         applyOps(updated, ops);
         data.set(updated);
       }
-      return ws.send({ action: "delta", doc: name, ops });
+      return ws().send({ action: "delta", doc: name, ops });
     },
   };
 }
 
-/** Call a stateless method. Injects the WS connection provided by app.tsx. */
+/** Call a stateless method. */
 export function call<T>(method: string, params?: any): Promise<T> {
-  return inject(WS).send({ action: "call", method, params });
+  return ws().send({ action: "call", method, params });
 }
