@@ -27,8 +27,8 @@
  * Multiple ops in one send() are atomic — applied, persisted, and broadcast together.
  */
 import { createLogger, signal } from "@blueshed/railroad";
-import { key, inject } from "@blueshed/railroad/shared";
-import { type ActionHandler, connectClient } from "./paintbrush-ws";
+import { inject } from "@blueshed/railroad/shared";
+import { type ActionHandler, type WsClient, WS } from "./paintbrush-ws";
 
 // ---------------------------------------------------------------------------
 // Types (shared)
@@ -144,17 +144,21 @@ export function registerMethod(
 }
 
 // ---------------------------------------------------------------------------
-// Client — open docs and call methods via paintbrush-ws
+// Client — open docs and call methods via the provided WS
 // ---------------------------------------------------------------------------
 
-export type DeltaClient = ReturnType<typeof createDeltaClient>;
-export const HUB = key<DeltaClient>("hub");
+export interface Doc<T> {
+  data: ReturnType<typeof signal<T | null>>;
+  send: (ops: DeltaOp[]) => Promise<any>;
+}
 
-export function createDeltaClient(wsPath: string) {
-  const ws = connectClient(wsPath);
-  const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
+const openDocs = new Map<string, { data: ReturnType<typeof signal<any>> }>();
+let wsSetup = false;
 
-  // Re-open docs on reconnect
+function ensureWsListeners(ws: WsClient) {
+  if (wsSetup) return;
+  wsSetup = true;
+
   ws.on("open", () => {
     for (const [name, entry] of openDocs) {
       ws.send({ action: "open", doc: name }).then((state) => {
@@ -163,7 +167,6 @@ export function createDeltaClient(wsPath: string) {
     }
   });
 
-  // Handle notifications (doc deltas from other clients)
   ws.on("message", (msg) => {
     if (msg.doc && msg.ops) {
       const entry = openDocs.get(msg.doc);
@@ -177,42 +180,35 @@ export function createDeltaClient(wsPath: string) {
       }
     }
   });
+}
 
-  interface Doc<T> {
-    data: ReturnType<typeof signal<T | null>>;
-    send: (ops: DeltaOp[]) => Promise<any>;
-  }
+/** Open a persisted doc. Injects the WS connection provided by app.tsx. */
+export function openDoc<T>(name: string): Doc<T> {
+  const ws = inject(WS);
+  ensureWsListeners(ws);
+
+  const data = signal<T | null>(null);
+  openDocs.set(name, { data });
+
+  ws.send({ action: "open", doc: name }).then((state) => {
+    data.set(state as T);
+  });
 
   return {
-    call<T>(method: string, params?: any): Promise<T> {
-      return ws.send({ action: "call", method, params });
-    },
-
-    open<T>(name: string): Doc<T> {
-      const data = signal<T | null>(null);
-      openDocs.set(name, { data });
-
-      ws.send({ action: "open", doc: name }).then((state) => {
-        data.set(state as T);
-      });
-
-      return {
-        data,
-        send(ops: DeltaOp[]) {
-          const current = data.peek();
-          if (current) {
-            const updated = structuredClone(current);
-            applyOps(updated, ops);
-            data.set(updated);
-          }
-          return ws.send({ action: "delta", doc: name, ops });
-        },
-      };
+    data,
+    send(ops: DeltaOp[]) {
+      const current = data.peek();
+      if (current) {
+        const updated = structuredClone(current);
+        applyOps(updated, ops);
+        data.set(updated);
+      }
+      return ws.send({ action: "delta", doc: name, ops });
     },
   };
 }
 
-/** Inject the hub provided by app.tsx. */
-export function hub(): DeltaClient {
-  return inject(HUB);
+/** Call a stateless method. Injects the WS connection provided by app.tsx. */
+export function call<T>(method: string, params?: any): Promise<T> {
+  return inject(WS).send({ action: "call", method, params });
 }

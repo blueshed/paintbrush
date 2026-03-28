@@ -14,11 +14,12 @@
  *   ws.setServer(server);
  *
  * Client usage:
- *   const ws = connectClient("/ws");
+ *   const ws = connectWs("/ws");
  *   const result = await ws.send({ action: "ping" });
  *   ws.on("notify", (msg) => console.log(msg));
  */
 import { createLogger } from "@blueshed/railroad";
+import { key } from "@blueshed/railroad/shared";
 import { reconnectingWebSocket } from "./reconnecting-ws";
 
 // ---------------------------------------------------------------------------
@@ -117,7 +118,7 @@ export function createWs() {
 
 export type NotifyHandler = (msg: any) => void;
 
-export function connectClient(wsPath: string = "/ws") {
+export function connectWs(wsPath: string = "/ws") {
   const log = createLogger("[ws]");
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   const ws = reconnectingWebSocket(
@@ -192,3 +193,6 @@ export function connectClient(wsPath: string = "/ws") {
     },
   };
 }
+
+export type WsClient = ReturnType<typeof connectWs>;
+export const WS = key<WsClient>("ws");

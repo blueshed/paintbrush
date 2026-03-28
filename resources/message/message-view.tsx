@@ -1,9 +1,9 @@
 import { effect } from "@blueshed/railroad/signals";
-import { hub } from "@lib/delta-doc";
+import { openDoc } from "@lib/delta-doc";
 import { toast } from "@lib/toast";
 import type { Message } from "./message-api";
 
-const message = hub().open<Message>("message");
+const message = openDoc<Message>("message");
 
 export function MessageView() {
   let ta: HTMLTextAreaElement;
