@@ -1,7 +1,7 @@
 /**
  * Toast — singleton notification utility.
  *
- * import { toast } from "@lib/toast";
+ * import { toast } from "../resources/toast";
  * toast("Saved");
  * toast("Deleted", "alert");
  */

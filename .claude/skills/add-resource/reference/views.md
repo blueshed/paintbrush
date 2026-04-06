@@ -23,16 +23,15 @@ export type {Name} = {
 
 ## Singleton component
 
-Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view). The hub connection and doc are created at module level.
+Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view). The doc is opened at module level.
 
 ```tsx
 import { effect } from "@blueshed/railroad/signals";
-import { connect, type DeltaOp } from "@lib/delta-doc";
-import { toast } from "@lib/toast";
+import { openDoc, type DeltaOp } from "@blueshed/railroad/delta-client";
+import { toast } from "../toast";
 import type { {Name} } from "./{name}-api";
 
-const hub = connect("/ws");
-const {name} = hub.open<{Name}>("{name}");
+const {name} = openDoc<{Name}>("{name}");
 
 export function {Name}View() {
   let input: HTMLInputElement;
@@ -62,17 +61,16 @@ export function {Name}View() {
 
 ## Collection components
 
-Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view with two exports). Hub and doc at module level, shared between list and detail.
+Two files: `{name}-api.ts` (type) + `{name}-view.tsx` (view with two exports). Doc opened at module level, shared between list and detail.
 
 ```tsx
 import { when, list } from "@blueshed/railroad";
 import { computed } from "@blueshed/railroad/signals";
-import { connect, type DeltaOp } from "@lib/delta-doc";
-import { toast } from "@lib/toast";
+import { openDoc, type DeltaOp } from "@blueshed/railroad/delta-client";
+import { toast } from "../toast";
 import type { {Name} } from "./{name}-api";
 
-const hub = connect("/ws");
-const {names} = hub.open<{ items: {Name}[] }>("{names}");
+const {names} = openDoc<{ items: {Name}[] }>("{names}");
 const items = computed<{Name}[]>(() => {names}.data.get()?.items ?? []);
 ```
 

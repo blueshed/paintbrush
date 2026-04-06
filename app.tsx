@@ -6,7 +6,7 @@
  */
 import { routes } from "@blueshed/railroad/routes";
 import { provide } from "@blueshed/railroad/shared";
-import { connectWs, WS } from "./lib/paintbrush-ws";
+import { connectWs, WS } from "@blueshed/railroad/delta-client";
 import { MessageView } from "./resources/message/message-view";
 import { StatusView } from "./resources/status/status-view";
 

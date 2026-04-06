@@ -1,16 +1,15 @@
 # Delta-doc resource patterns
 
-Resources use `delta-doc.ts` (over `paintbrush-ws.ts`) for both server and client. The shared type in `{name}-api.ts` is the contract — imported by both sides.
+Resources use `@blueshed/railroad/delta-server` (server) and `@blueshed/railroad/delta-client` (client) for document sync. The shared type in `{name}-api.ts` is the contract — imported by both sides.
 
 ## Server setup (`server.ts`)
 
-Each resource registers with the shared paintbrush-ws server. Import the shared type for type safety.
+Each resource registers with the shared WebSocket server. Import the shared type for type safety.
 
 ### Singleton
 
 ```ts
-import { createWs } from "./lib/paintbrush-ws";
-import { registerDoc } from "./lib/delta-doc";
+import { createWs, registerDoc } from "@blueshed/railroad/delta-server";
 import type { {Name} } from "./resources/{name}/{name}-api";
 
 const ws = createWs();
@@ -47,7 +46,7 @@ await registerDoc<{ items: {Name}[] }>(ws, "{names}", {
 For read-only or computed data (not persisted), use `registerMethod()`:
 
 ```ts
-import { registerMethod } from "./lib/delta-doc";
+import { registerMethod } from "@blueshed/railroad/delta-server";
 
 registerMethod(ws, "status", (): Status => ({
   uptime: Math.floor(process.uptime()),
@@ -60,10 +59,9 @@ registerMethod(ws, "status", (): Status => ({
 Connect and open the doc:
 
 ```ts
-import { connect, type DeltaOp } from "@lib/delta-doc";
+import { openDoc, call, type DeltaOp } from "@blueshed/railroad/delta-client";
 
-const hub = connect("/ws");
-const {name} = hub.open<{Name}>("{name}");
+const {name} = openDoc<{Name}>("{name}");
 
 // Read: {name}.data is a Signal<T | null>
 effect(() => {
@@ -75,7 +73,7 @@ effect(() => {
 {name}.send([{ op: "replace", path: "/{field}", value: "new value" }]);
 
 // Stateless call:
-const status = await hub.call<Status>("status");
+const status = await call<Status>("status");
 ```
 
 ## Delta operations

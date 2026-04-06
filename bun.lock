@@ -5,22 +5,22 @@
     "": {
       "name": "paintbrush",
       "dependencies": {
-        "@blueshed/railroad": "^0.3.2",
+        "@blueshed/railroad": "0.6.0",
         "feather-icons": "^4.29.2",
       },
       "devDependencies": {
-        "@railway/cli": "^4.35.0",
+        "@railway/cli": "^4.36.1",
         "@types/bun": "^1.3.11",
         "@types/feather-icons": "^4.29.4",
       },
     },
   },
   "packages": {
-    "@blueshed/railroad": ["@blueshed/railroad@0.3.2", "", {}, "sha512-gab9Irw5kmQ3Ya5FEg/8lbk4Awd6jFxRhPqZwPo8gMgkq4DURlpQQhvTyXlMx4g3DvdFfaoMD1XR1g9HDsx7BQ=="],
+    "@blueshed/railroad": ["@blueshed/railroad@0.6.0", "", {}, "sha512-7cA0UgNtJ2Np4OrqA6BE/3ThS/pZtUT7vIaTA6N7qpbk/CVPIIm8Y46VThDKjWfOqjrDaEcaRyORNCC4ODDREA=="],
 
     "@napi-rs/triples": ["@napi-rs/triples@1.2.0", "", {}, "sha512-HAPjR3bnCsdXBsATpDIP5WCrw0JcACwhhrwIAQhiR46n+jm+a2F8kBsfseAuWtSyQ+H3Yebt2k43B5dy+04yMA=="],
 
-    "@railway/cli": ["@railway/cli@4.35.0", "", { "dependencies": { "@napi-rs/triples": "^1.1.0", "node-fetch": "^3.1.0", "tar": "^6.1.11" }, "bin": { "railway": "bin/railway.js" } }, "sha512-b30N1gJ/FCdMdgLQ0I0glvI+a3RYZke0x3prR8G4vZ8rwkgWyqD8+rdwJB5mgFpn40QrzGw9jNHbaPOXPncKSA=="],
+    "@railway/cli": ["@railway/cli@4.36.1", "", { "dependencies": { "@napi-rs/triples": "^1.1.0", "node-fetch": "^3.1.0", "tar": "^6.1.11" }, "bin": { "railway": "bin/railway.js" } }, "sha512-9GOArp5zOoGgdSwSnfs/PGx+J2eKBDA7rAj4GW/Wp2KNa7RiuksYqXWs7vxJTilcBpkuD1llXeb3dAP/oLxNHw=="],
 
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 

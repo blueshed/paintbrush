@@ -6,8 +6,7 @@
 import { createLogger } from "@blueshed/railroad";
 import homepage from "./index.html";
 import sample from "./resources/sample.html";
-import { createWs } from "./lib/paintbrush-ws";
-import { registerDoc, registerMethod } from "./lib/delta-doc";
+import { createWs, registerDoc, registerMethod } from "@blueshed/railroad/delta-server";
 import { getLogo, notFound } from "./resources/common-api";
 import type { Message } from "./resources/message/message-api";
 import type { Status } from "./resources/status/status-api";

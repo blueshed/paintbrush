@@ -1,6 +1,6 @@
 import { effect } from "@blueshed/railroad/signals";
-import { openDoc } from "@lib/delta-doc";
-import { toast } from "@lib/toast";
+import { openDoc } from "@blueshed/railroad/delta-client";
+import { toast } from "../toast";
 import type { Message } from "./message-api";
 
 const message = openDoc<Message>("message");
