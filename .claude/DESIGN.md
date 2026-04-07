@@ -96,9 +96,11 @@ Inline pattern — swap toolbar: hide action buttons, show `.confirm` toolbar wi
 |---|---|
 | Content width | `max-width: 640px`, centered |
 | Page padding | `2rem 1rem` |
+| Scroll container | `html, body { height: 100%; overflow: hidden }`, `#app { height: 100dvh; overflow-y: auto }` — scroll is on `#app`, not the body (prevents rubber-banding on fixed elements) |
+| Sidebar offset | `body:has(.sidebar) { padding-left: 56px }` |
 | Spacing unit | `rem`-based, no fixed scale — `0.25` / `0.5` / `0.75` / `1` / `1.5` / `2` |
 | Dividers | `<hr>` with `margin: 2rem 0` |
-| Overflow | `overflow-x: hidden`, `overflow-wrap: anywhere` |
+| Word wrap | `overflow-wrap: anywhere` |
 
 ## Depth & Elevation
 
