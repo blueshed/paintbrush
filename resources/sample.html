@@ -222,7 +222,7 @@ Review Q2 targets and assign owners for each workstream.</textarea
             <a href="#/" class="active" title="Home"><i data-feather="home"></i></a>
             <a href="#/notes" title="Notes"><i data-feather="file-text"></i></a>
             <div class="spacer"></div>
-            <a href="#/settings" title="Settings"><i data-feather="settings"></i></a>
+            <a href="#" id="sidebar-settings" title="Settings"><i data-feather="settings"></i></a>
         </nav>
 
         <!-- dock for mobile — icons + labels, fixed bottom -->
@@ -235,10 +235,22 @@ Review Q2 targets and assign owners for each workstream.</textarea
                 <i data-feather="file-text"></i>
                 <span>Notes</span>
             </a>
-            <a href="#/settings">
+            <a href="#" id="dock-settings">
                 <i data-feather="settings"></i>
                 <span>Settings</span>
             </a>
         </nav>
+
+        <!-- about modal -->
+        <div class="modal-backdrop" id="settings-modal" hidden>
+            <div class="modal">
+                <h2>About Paintbrush</h2>
+                <p class="help" style="margin-top:0">Routes and resources for Bun, powered by railroad for signals, JSX, routing, and delta-doc for real-time sync.</p>
+                <p class="meta">Style sample &middot; feather-icons</p>
+                <div class="toolbar">
+                    <button type="button" class="primary" id="settings-close">OK</button>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

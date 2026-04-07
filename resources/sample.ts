@@ -86,3 +86,16 @@ document.getElementById("about-confirm-yes")!.addEventListener("click", () => {
     closeAbout();
     showToast("Note deleted", "alert");
 });
+
+// Settings / About modal
+const settingsModal = document.getElementById("settings-modal") as HTMLElement;
+function openSettings(e: Event) {
+    e.preventDefault();
+    settingsModal.hidden = false;
+}
+function closeSettings() { settingsModal.hidden = true; }
+document.getElementById("sidebar-settings")!.addEventListener("click", openSettings);
+document.getElementById("dock-settings")!.addEventListener("click", openSettings);
+document.getElementById("settings-close")!.addEventListener("click", closeSettings);
+settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
+settingsModal.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSettings(); });

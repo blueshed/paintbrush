@@ -5,7 +5,7 @@
     "": {
       "name": "paintbrush",
       "dependencies": {
-        "@blueshed/railroad": "0.6.0",
+        "@blueshed/railroad": "^0.6.1",
         "feather-icons": "^4.29.2",
       },
       "devDependencies": {
@@ -16,7 +16,7 @@
     },
   },
   "packages": {
-    "@blueshed/railroad": ["@blueshed/railroad@0.6.0", "", {}, "sha512-7cA0UgNtJ2Np4OrqA6BE/3ThS/pZtUT7vIaTA6N7qpbk/CVPIIm8Y46VThDKjWfOqjrDaEcaRyORNCC4ODDREA=="],
+    "@blueshed/railroad": ["@blueshed/railroad@0.6.1", "", {}, "sha512-0Ejxj+EyWOD76NiO8kHGd0bMiXhudNwEAGdGlREuih9Du/KQVI+SU3P8avMkEAtO2VKw8W7mH4bOd1Vh/phaqA=="],
 
     "@napi-rs/triples": ["@napi-rs/triples@1.2.0", "", {}, "sha512-HAPjR3bnCsdXBsATpDIP5WCrw0JcACwhhrwIAQhiR46n+jm+a2F8kBsfseAuWtSyQ+H3Yebt2k43B5dy+04yMA=="],
 

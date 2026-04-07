@@ -26,6 +26,8 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html, body { height: 100%; overflow: hidden; }
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -35,11 +37,10 @@ body {
 
 #app {
   max-width: 640px;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100dvh;
   margin: 0 auto;
   padding: 2rem 1rem;
-  overflow-x: hidden;
+  overflow-y: auto;
   overflow-wrap: anywhere;
 }
 
