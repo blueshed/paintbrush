@@ -1,8 +1,10 @@
 /*
- * Styles: the design system as far as the starter uses it.
- * Variables, then reset and layout, base elements, components, touch targets.
- * Navigation, lists, modals and the rest are in the add-part skill (parts/design-system.md).
- * The rules behind these values are in .claude/DESIGN.md.
+ * Styles: variables, reset and layout, base elements, components, touch targets.
+ *
+ * The rules: minimal and content-first, with no decoration. Every colour is a variable in :root,
+ * never a hex value in a component. The primary button is black. Radius is 4px. No shadows,
+ * gradients or animation beyond the toast's fade. Touch is a pointer query, not a width. Feedback
+ * is a toast ("Saved", "Not saved"), never the browser's alert() or confirm().
  */
 
 :root {

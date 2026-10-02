@@ -1,13 +1,18 @@
-import { when } from "@blueshed/railroad";
-import { status } from "./store";
+import { signal, when } from "@blueshed/railroad";
+import { load, status } from "./status";
 
 export function StatusView() {
-  status.load();
+  const failed = signal(false);
+
+  load().then(
+    () => failed.set(false),
+    () => failed.set(true),
+  );
 
   return (
     <div id="status">
-      {when(status.failed, () => <p class="help">The status could not be loaded.</p>)}
-      {when(status.data, (s$) => (
+      {when(failed, () => <p class="help">The status could not be loaded.</p>)}
+      {when(status, (s$) => (
         <>
           <p class="help">
             {s$.map((s) =>

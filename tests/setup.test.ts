@@ -25,6 +25,7 @@ test("setup turns the template into an app", async () => {
     ".claude/launch.json": '{ "name": "paintbrush" }',
     ".railway/railway.ts": 'project("paintbrush", {})',
     "node_modules/@blueshed/railroad/.claude/skills/railroad/SKILL.md": "the railroad skill",
+    "node_modules/@blueshed/railroad/.claude/skills/bun-route/SKILL.md": "the bun-route skill",
   });
   try {
     await setup(root);
@@ -41,6 +42,7 @@ test("setup turns the template into an app", async () => {
     expect(await Bun.file(join(root, ".railway/railway.ts")).text()).toBe('project("my-app", {})');
     expect(await Bun.file(join(root, "CLAUDE.md")).text()).toBe("# my-app\nAbout the app.\n");
     expect(await Bun.file(join(root, ".claude/skills/railroad/SKILL.md")).text()).toBe("the railroad skill");
+    expect(existsSync(join(root, ".claude/skills/bun-route"))).toBe(false); // it contradicts CLAUDE.md
   } finally {
     done();
   }
@@ -82,14 +84,14 @@ test("setup refuses to run in a clone of the template, and touches nothing", asy
   }
 });
 
-test("setup says so when railroad's skills are not installed, and skips files that are not there", async () => {
+test("setup says so when railroad's skill is not installed, and skips files that are not there", async () => {
   const { root, done } = await scratchTemplate({});
   const warnings: string[] = [];
   const warn = console.warn;
   console.warn = (...args) => void warnings.push(args.join(" "));
   try {
     await setup(root);
-    expect(warnings.join("\n")).toContain("no railroad skills found");
+    expect(warnings.join("\n")).toContain("railroad's skill not found");
     expect(existsSync(join(root, ".claude/skills"))).toBe(false);
   } finally {
     console.warn = warn;

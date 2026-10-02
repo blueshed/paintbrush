@@ -4,8 +4,8 @@
  * To add a page: import its view and add a route entry below.
  */
 import { routes } from "@blueshed/railroad";
-import { MessageView } from "./resources/message/view";
-import { StatusView } from "./resources/status/view";
+import { MessageView } from "./resources/message/message-view";
+import { StatusView } from "./resources/status/status-view";
 
 routes(document.getElementById("app")!, {
   "/": () => (

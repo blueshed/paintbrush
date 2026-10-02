@@ -5,8 +5,8 @@
 //
 // It turns the template into an app. What is about developing the template goes
 // (its ledger, its changelog, its logo, this script and its test); the app starts
-// with fresh ones; its name replaces "Paintbrush"; and the skills that railroad
-// ships are copied into .claude/skills, so a session starts knowing them.
+// with fresh ones; its name replaces "Paintbrush"; and railroad's skill is copied
+// into .claude/skills, so a session starts knowing how railroad's JSX behaves.
 
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -17,7 +17,6 @@ export const NAMED = [
   "src/index.html",
   "tests/site.test.ts",
   "CLAUDE.md",
-  ".claude/DESIGN.md",
   ".claude/launch.json",
   ".railway/railway.ts",
   "bun.lock", // the root package's name
@@ -74,12 +73,14 @@ export async function setup(root: string) {
     await Bun.write(file, text);
   }
 
-  const skills = join(root, "node_modules/@blueshed/railroad/.claude/skills");
-  if (existsSync(skills)) {
-    cpSync(skills, join(root, ".claude/skills"), { recursive: true });
-    console.log("  copied the railroad skills into .claude/skills");
+  // railroad's own skill. Its bun-route skill is not copied: it tells a session to run `bun init`
+  // and to use Playwright, and this app's CLAUDE.md says not to.
+  const skill = join(root, "node_modules/@blueshed/railroad/.claude/skills/railroad");
+  if (existsSync(skill)) {
+    cpSync(skill, join(root, ".claude/skills/railroad"), { recursive: true });
+    console.log("  copied railroad's skill into .claude/skills");
   } else {
-    console.warn("  no railroad skills found: after `bun install`, copy node_modules/@blueshed/railroad/.claude/skills into .claude/skills");
+    console.warn("  railroad's skill not found: after `bun install`, copy node_modules/@blueshed/railroad/.claude/skills/railroad into .claude/skills");
   }
 
   await commitEverything(root);
@@ -92,7 +93,7 @@ export async function setup(root: string) {
   bun test           # tests, held at 100% coverage
   bun run typecheck  # tsc
 
-  Read CLAUDE.md first: it says what is here and what to add when you need it.
+  Read CLAUDE.md first: it says what is here and how a resource evolves.
 `);
 }
 
@@ -118,7 +119,7 @@ bun test           # tests, held at 100% coverage
 bun run typecheck
 \`\`\`
 
-CLAUDE.md says what is here and what to add when you need it. \`todo.jsonl\` is the
+CLAUDE.md says what is here and how a resource evolves. \`todo.jsonl\` is the
 ledger of open work; \`CHANGELOG.md\` records what has changed.
 `;
 
