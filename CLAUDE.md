@@ -8,7 +8,7 @@
 > `setup()` refuses to run in a clone of this repo (its `origin` is the template's), because it deletes things. Write ledger and changelog text with the file tools, never inside a quoted shell argument.
 <!-- /template -->
 
-A starter for a Bun website: **routes and resources**, with railroad for the page and Railway for the deploy. Explicit over implicit: every route and handler is visible in the code, so a person or an AI can read `src/server.ts` and `src/app.tsx` and know what the app does. The approach is settled: do not research alternatives, and use Bun's built-ins.
+A starter for a Bun website: **routes and resources**, with railroad for the page and Railway for the deploy. Explicit over implicit: every route and handler is visible in the code, so a person or an AI can read `src/server.ts` and `src/app.tsx` and know what the app does. The approach is settled, so build on it.
 
 **Start small.** The app is what is listed below and nothing else. Add something only when the user asks for what it provides. Its code and its tests go in together, and test coverage stays at 100%.
 
@@ -56,23 +56,11 @@ A server started in the background, as Claude starts them, cannot be stopped wit
 4. `src/app.tsx`: put the view in a route.
 5. Tests in `tests/site.test.ts`: every route and method with `fetch`, the 400s included, and in the browser what a person sees and clicks, a failure included.
 
-## Do not use
+## Use Bun
 
-- Node, npm, npx, pnpm, yarn → `bun`, `bun install`, `bunx`
-- Vite, webpack, esbuild, Parcel → Bun bundles HTML imports itself
-- Express, Hono, Fastify, serve-static → `Bun.serve()` routes. A folder of files is `"/static/*": { dir: import.meta.dir + "/../public" }` (the folder must exist, and it is found from `import.meta.dir`, never the working directory)
-- the `ws` package → Bun's built-in WebSocket
-- Puppeteer, Playwright, jsdom, happy-dom → `Bun.WebView` for browser tests
-- bcrypt, argon2, crypto-js → `Bun.password` and `Bun.CryptoHasher`
-- better-sqlite3, sqlite3 → the built-in `bun:sqlite`
-- concurrently, npm-run-all → `bun run --parallel`
-- `railway.json`, `railway.toml` (deprecated) → `.railway/railway.ts`
-- `node:fs` reads and writes where `Bun.file()` and `Bun.write()` will do
-- `dotenv` → Bun loads `.env` itself
-- `bun init` → it adds files this app does not use
-- React, Preact, Vue or any other framework → railroad. **This is not React.** Read the `railroad` skill before writing JSX: lowercase events (`onclick`) and `class`, never `.get()` in JSX children, `list()` for any array that changes length.
+Bun is the runtime, the package manager, the bundler and the test runner, and it does more than most projects use. Before you add a package, check what Bun already has: its documentation is in `node_modules/bun-types/docs/`. Among much else it has an HTTP server with routes and WebSockets (`Bun.serve`), SQLite (`bun:sqlite`), password hashing and hashing (`Bun.password`, `Bun.CryptoHasher`), files (`Bun.file`, `Bun.write`), `.env` loading, and a real browser for tests (`Bun.WebView`). A folder of files is a route: `"/static/*": { dir: import.meta.dir + "/../public" }`, and the folder must exist.
 
-Bun's API docs are in `node_modules/bun-types/docs/`. Check there before guessing at an API.
+The page is railroad: signals and real-DOM JSX, **not React**. Read the `railroad` skill before writing JSX. The habits that matter: lowercase events (`onclick`) and `class`, never `.get()` in JSX children, and `list()` for any array that changes length.
 
 ## Tests
 
