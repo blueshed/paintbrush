@@ -1,20 +1,19 @@
 import { signal, when } from "@blueshed/railroad";
 import { toast } from "../toast";
-import { load, message, save } from "./message";
+import { message } from "./store";
 
 export function MessageView() {
-  const text = signal(message.peek()?.message ?? "");
-  const failed = signal(false);
+  const text = signal(message.data.peek()?.message ?? "");
 
-  load().then(
-    () => text.set(message.peek()!.message),
-    () => failed.set(true),
-  );
+  message.load().then(() => {
+    const loaded = message.data.peek();
+    if (loaded) text.set(loaded.message);
+  });
 
   // Say "Saved" only once the server has said so
   async function onsave() {
     try {
-      await save(text.peek());
+      await message.save({ message: text.peek() });
       toast("Saved");
     } catch {
       toast("Not saved", "alert");
@@ -23,8 +22,8 @@ export function MessageView() {
 
   return (
     <>
-      <h1>Paintbrush</h1>
-      {when(failed, () => <p class="help">The message could not be loaded.</p>)}
+      <h1>Message</h1>
+      {when(message.failed, () => <p class="help">The message could not be loaded.</p>)}
       <textarea
         value={text}
         oninput={(e: Event) => text.set((e.currentTarget as HTMLTextAreaElement).value)}

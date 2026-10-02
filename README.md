@@ -1,10 +1,10 @@
-<p align="center"><img src="./src/logo.png" alt="Logo" width="120"></p>
+<p align="center"><img src="./logo.png" alt="Logo" width="120"></p>
 
 # Paintbrush
 
-A starter for a website on [Bun](https://bun.sh) that can grow with its requirements. It starts with routes and resources, [railroad](https://github.com/blueshed/railroad) for the page, and [Railway](https://railway.com) for the deploy, and you add the rest when you need it: static files, live documents with [delta](https://github.com/blueshed/delta), SQLite, passwords.
+**A Bun website that grows with its requirements.**
 
-Requires Bun 1.4 or later.
+It starts as little as a site can be: routes and resources over plain JSON, [railroad](https://github.com/blueshed/railroad) for the page, [Railway](https://railway.com) for the deploy. When the site needs more, you add one part at a time: static files, live documents with [delta](https://github.com/blueshed/delta), SQLite, passwords. Nothing is there until it is asked for, and everything that is there is tested.
 
 ```sh
 bun create blueshed/paintbrush myapp
@@ -12,38 +12,47 @@ cd myapp
 bun dev
 ```
 
-Open `http://localhost:3000`. You get a message you can edit and save, a status line, and a page that follows a handful of rules written down in `CLAUDE.md`, which is the real documentation: it is what a Claude Code session reads to know what is here, what not to use, and what to add when.
+Open `http://localhost:3000`: a message you can edit and save, and a line that says whether your data will survive a deploy. Needs [Bun](https://bun.sh) 1.4 or later.
 
-## What's in the box
+## How it fits together
 
 ```
-src/
-  server.ts       startServer(): the page, one route per resource, /health
-  main.ts         the entry point: a pid file, so a server started in the background can be stopped
-  index.html      the page; Bun bundles the TypeScript and CSS it references
-  app.tsx         the client's hash routes
-  resources/      one folder per resource: <name>-api.ts, <name>.ts, <name>-view.tsx
-tests/            API, browser (Bun.WebView), entry-point and production-build tests
-.railway/         the deploy, as code
+ the page                                         the server
+ ────────                                         ──────────
+ app.tsx   a hash route
+    │
+ view.tsx  signals and JSX                         server.ts   routes: /  /api/message  /health
+    │                                                  │
+ store.ts  resource("/api/message")  ── GET, PUT ──▶  message/api.ts ──▶ data/message.json
 ```
 
-A **resource** has a server half (`<name>-api.ts`: the type both sides share and plain handlers that return a `Response`), a client store (`<name>.ts`: a signal and `fetch` wrappers) and a view (`<name>-view.tsx`). A **route** is two entries: the server's in `startServer` and the page's in `app.tsx`.
+A **resource** is a folder of three files, and the role is the name: `api.ts` (the type both sides share, and the routes), `store.ts` (what the page holds: a signal, `load`, `save`) and `view.tsx`. A **route** is two lines: the resource's, spread into `startServer`, and the page's, in `app.tsx`. Adding a resource is copying `message` and changing what it says.
 
-## The rules it keeps
+The same server runs three ways: `bun dev` (hot reload), `bun run build` and `serve:dist` (bundled, no runtime bundling), and from a test, on a random port. `main.ts` keeps a pid file, so a server started in the background can be stopped with `bun run stop`.
 
-- **Start small.** The core is all there is until something asks for more; each part brings its tests with it, and `bun test` fails below 100% coverage.
-- **Bun's built-ins throughout.** No Vite, Express, `ws`, bcrypt or SQLite packages; the page is bundled from an HTML import and tested in a real browser.
-- **A server you can stop.** `bun run stop` works because `main.ts` keeps a pid file.
-- **Deploy in the box.** `bun run build`, a `/health` route and `.railway/railway.ts` (with a volume for the data). `railway config plan` shows what would change; nothing is applied without you.
+## It grows
 
-## Add when needed
+| You need | Add | What changes |
+|---|---|---|
+| a download, or data loaded at runtime | static files | one route, one test |
+| updates pushed to the page | a WebSocket | a route and a store |
+| several people editing the same thing, live | delta | a resource becomes a document; its view hardly changes |
+| records that outlive a restart and no longer fit in a file | SQLite | a database behind a resource |
+| sign-in | passwords | `Bun.password`, tested through its handlers |
+| menus, lists, dialogs | the rest of the design system | the CSS the starter leaves out |
 
-Static files · WebSocket · live documents with delta · SQLite · passwords. Each is a section in `CLAUDE.md` with its code and its tests.
+Each is a file in `.claude/skills/add-part/parts/`, with its code and its tests.
 
-## Starting a project from it
+## Made to be worked on with Claude
 
-`bun create` runs `create/setup.ts` after installing: it gives the new app a fresh `todo.jsonl` (the ledger of open work) and `CHANGELOG.md`, puts the app's name in place of "Paintbrush", and copies railroad's skills into `.claude/skills`.
+`CLAUDE.md` is short on purpose: what is here, what not to use, and the rules that hold. The rest is in skills that load when they are needed (`add-part`, `webview-tests`, `railway-deploy`, and railroad's own). Every route and everything a person sees or clicks has a test, coverage is held at 100%, and a Claude Code web session gets Bun and a browser from a SessionStart hook. `todo.jsonl` is the ledger of open work and `CHANGELOG.md` is where the project has been; both are kept as the work happens.
 
-## License
+## Deploying
+
+`.railway/railway.ts` describes the service, its healthcheck and a volume for the data. `railway config plan` shows what would change; nothing is applied until you say so.
+
+## Starting from it
+
+`bun create` runs `create/setup.ts` after installing: your app gets its own name, a fresh ledger and changelog, and railroad's skills. The template's logo, the script and its test are not copied across.
 
 MIT

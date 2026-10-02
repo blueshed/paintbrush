@@ -28,6 +28,16 @@ afterAll(async () => {
   rmSync(dataDir, { recursive: true, force: true });
 });
 
+// --- Helpers ---
+
+const api = (path: string, init?: RequestInit) => fetch(new URL(path, server.url), init);
+const putMessage = (body: string) => api("/api/message", { method: "PUT", body });
+
+// Load the page afresh. Navigating to the URL the view is already at does not reload it,
+// so each visit gets a query of its own (the route ignores it).
+let visits = 0;
+const open = () => view.navigate(`${server.url.href}?visit=${++visits}`);
+
 // Poll a page-side expression until it is truthy
 async function waitFor(expr: string, timeout = 5_000) {
   const end = Date.now() + timeout;
@@ -38,10 +48,15 @@ async function waitFor(expr: string, timeout = 5_000) {
   throw new Error(`Timed out waiting for: ${expr}`);
 }
 
-// Load the page afresh. Navigating to the URL the view is already at does not reload it,
-// so each visit gets a query of its own (the route ignores it).
-let visits = 0;
-const open = () => view.navigate(`${server.url.href}?visit=${++visits}`);
+// Replace what is in a field the way typing would: clear it (and tell the page), then type
+async function replaceText(selector: string, text: string) {
+  await view.evaluate(`(() => { const el = document.querySelector("${selector}"); el.value = ""; el.dispatchEvent(new Event("input")); })()`);
+  await view.click(selector);
+  await view.type(text);
+}
+
+// Make every fetch the page makes from now on answer 500, to see what a person sees when the server says no
+const failFetch = () => view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
 
 // Run a server process on a random port; resolve once it prints its URL
 async function spawnServer(cmd: string[], env: Record<string, string> = {}) {
@@ -64,15 +79,13 @@ async function spawnServer(cmd: string[], env: Record<string, string> = {}) {
   }
 }
 
-const api = (path: string, init?: RequestInit) => fetch(new URL(path, server.url), init);
-const putMessage = (body: string) => api("/api/message", { method: "PUT", body });
-
+// --- The routes ---
 // Tests run in file order: the first one needs a data folder nothing has been saved to.
 
 test("GET /api/message answers the default before anything is saved", async () => {
   const res = await api("/api/message");
   expect(res.status).toBe(200);
-  expect(await res.json()).toEqual({ message: "Hello from Paintbrush" });
+  expect(await res.json()).toEqual({ message: "Hello" });
 });
 
 test("PUT /api/message stores the message and GET answers it", async () => {
@@ -112,9 +125,12 @@ test("unknown paths return 404", async () => {
   expect((await api("/nope")).status).toBe(404);
 });
 
+// --- The page, in a real browser ---
+
 test("home page loads", async () => {
   await open();
   expect(await view.evaluate<string>("document.title")).toBe("Paintbrush");
+  await waitFor(`document.querySelector("h1")?.textContent === "Message"`);
 });
 
 test("the saved message is in the box", async () => {
@@ -126,10 +142,7 @@ test("the saved message is in the box", async () => {
 test("saving says Saved once the server has it, and the message survives a reload", async () => {
   await open();
   await waitFor(`document.querySelector("textarea")?.value === "in the box"`);
-  // clear the box the way typing would, then type
-  await view.evaluate(`(() => { const t = document.querySelector("textarea"); t.value = ""; t.dispatchEvent(new Event("input")); })()`);
-  await view.click("textarea");
-  await view.type("typed in the browser");
+  await replaceText("textarea", "typed in the browser");
   await view.click("button.primary");
   await waitFor(`document.querySelector(".toast.show.notify")?.textContent === "Saved"`);
 
@@ -141,31 +154,30 @@ test("saving says Saved once the server has it, and the message survives a reloa
 test("a save the server did not take says Not saved", async () => {
   await open();
   await waitFor(`document.querySelector("textarea")?.value === "typed in the browser"`);
-  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
+  await failFetch();
   await view.click("button.primary");
   await waitFor(`document.querySelector(".toast.show.alert")?.textContent === "Not saved"`);
 });
 
-test("the status line is shown, and says so when it cannot be loaded", async () => {
+test("the status line is shown", async () => {
   await open();
   await waitFor(`document.querySelector("#status .meta")?.textContent.includes("Bun ${Bun.version}")`);
   expect(await view.evaluate<string>(`document.querySelector("#status .help").textContent`)).toContain("ephemeral");
-
-  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
-  await view.click("#status");
-  await waitFor(`document.querySelector("#status .help")?.textContent === "The status could not be loaded."`);
 });
 
-test("the message says so when it cannot be loaded", async () => {
+test("a message and a status that cannot be loaded say so", async () => {
   await open();
   await waitFor(`document.querySelector("textarea")`);
-  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
-  // leave the page and come back: the view loads again, into a failing fetch
+  await failFetch();
+  // leave the page and come back: both views load again, into a failing fetch
   await view.evaluate(`location.hash = "#/elsewhere"`);
   await waitFor(`document.body.textContent.includes("Page not found!")`);
   await view.evaluate(`location.hash = "#/"`);
   await waitFor(`document.body.textContent.includes("The message could not be loaded.")`);
+  await waitFor(`document.body.textContent.includes("The status could not be loaded.")`);
 });
+
+// --- The entry point, the sandbox hook and the build ---
 
 test("main.ts starts the server on $PORT", async () => {
   const { proc, url } = await spawnServer([process.execPath, "src/main.ts"]);
@@ -204,6 +216,17 @@ test("pid file: an empty file doesn't block start, and stop removes it", async (
 
   await Bun.write(pidFile, "");
   expect(await stop()).toContain("removed stale pid file");
+});
+
+test("the web sandbox hook does nothing anywhere else", async () => {
+  const { CLAUDE_CODE_REMOTE: _, ...env } = process.env;
+  const hook = Bun.spawn(["bash", `${import.meta.dir}/../.claude/hooks/session-start.sh`], {
+    env: { ...env, CLAUDE_PROJECT_DIR: `${import.meta.dir}/..` },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  expect(await hook.exited).toBe(0);
+  expect(await new Response(hook.stdout).text()).toBe("");
 });
 
 test("production build serves the page without HMR", async () => {

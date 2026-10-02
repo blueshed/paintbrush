@@ -3,33 +3,39 @@
 // Post-create setup: `bun create blueshed/paintbrush my-app` runs this as the
 // template's postinstall, after `bun install` and before the first commit.
 //
-// It turns the template into an app: the template's own ledger and changelog go
-// (they are about developing paintbrush), the app starts with fresh ones, the
-// app's name replaces "Paintbrush", and the skills that railroad ships are
-// copied into .claude/skills so a session starts knowing them.
+// It turns the template into an app. What is about developing the template goes
+// (its ledger, its changelog, its logo, this script and its test); the app starts
+// with fresh ones; its name replaces "Paintbrush"; and the skills that railroad
+// ships are copied into .claude/skills, so a session starts knowing them.
 
 import { cpSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-// The files that carry the app's name, as "Paintbrush" (the page title, the
-// heading, the default message and the tests that expect them) or "paintbrush"
-// (the Railway project)
-const NAMED = [
+// The files that carry the app's name, as "Paintbrush" (the page title, which the
+// test expects) or "paintbrush" (the Railway project, the dev server's name)
+export const NAMED = [
   "src/index.html",
-  "src/resources/message/message-api.ts",
-  "src/resources/message/message-view.tsx",
   "tests/site.test.ts",
   "CLAUDE.md",
   ".claude/DESIGN.md",
+  ".claude/launch.json",
   ".railway/railway.ts",
   "bun.lock", // the root package's name
 ];
 
+// The template's own clone is the one place this must never run: it deletes things
+function isTemplateClone(root: string) {
+  const origin = Bun.spawnSync(["git", "remote", "get-url", "origin"], { cwd: root }).stdout.toString();
+  return /blueshed\/paintbrush(\.git)?\s*$/.test(origin);
+}
+
 export async function setup(root: string) {
+  if (isTemplateClone(root)) throw new Error(`${root} is a clone of the paintbrush template: setup would delete its ledger and changelog`);
+
   const name = root.split("/").pop() || "my-app";
   console.log(`Setting up ${name}...`);
 
-  for (const path of ["todo.jsonl", "CHANGELOG.md", "create", "tests/setup.test.ts"]) {
+  for (const path of ["todo.jsonl", "CHANGELOG.md", "logo.png", "create", "tests/setup.test.ts"]) {
     rmSync(join(root, path), { recursive: true, force: true });
   }
   await Bun.write(join(root, "todo.jsonl"), "");
@@ -93,6 +99,5 @@ ledger of open work; \`CHANGELOG.md\` records what has changed.
 `;
 
 // Last, so the constants above exist when it runs. Only when run (bun create's
-// postinstall), never on import: tests call setup() on a scratch folder, since
-// it deletes things.
+// postinstall), never on import: tests call setup() on a scratch folder.
 if (import.meta.main) await setup(process.cwd());
