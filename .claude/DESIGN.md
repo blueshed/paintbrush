@@ -122,7 +122,6 @@ Flat design — no shadows except modals. Two layers:
 - Use toast for feedback — `notify` for success, `alert` for destructive
 - Use `when()` for conditional rendering, `list()` for collections
 - Keep views flat — no nested card-in-card patterns
-- Use feather icons at `16x16` via `data-feather` attributes
 
 **Don't:**
 - Add box shadows to anything other than modals
@@ -149,7 +148,7 @@ Dock: `padding-bottom: env(safe-area-inset-bottom)` for notch devices. Icons `20
 
 ### Adding a new view
 
-1. Create `resources/{name}/{name}-view.tsx`
+1. Create `src/resources/{name}/{name}-view.tsx` (see "Adding a resource" in CLAUDE.md)
 2. Use `.toolbar` with `h1` + buttons for the header
 3. Use `.list` for collections, `.empty` for zero state
 4. Use `.back` link for detail views

@@ -1,23 +1,30 @@
 {
   "name": "paintbrush",
-  "version": "0.2.4",
-  "scripts": {
-    "dev": "bun --hot server.ts",
-    "sample": "open http://localhost:3000/sample"
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "bun": ">=1.4"
   },
   "bun-create": {
-    "start": "bun dev"
+    "postinstall": "create/setup.ts"
   },
-  "engines": {
-    "bun": ">=1.3.10"
-  },
-  "devDependencies": {
-    "@railway/cli": "^4.36.1",
-    "@types/bun": "^1.3.11",
-    "@types/feather-icons": "^4.29.4"
+  "scripts": {
+    "dev": "bun --hot src/main.ts",
+    "stop": "bun -e \"const f = Bun.file('.server.pid'); if (!(await f.exists())) console.log('not running'); else { const pid = Number(await f.text()); try { if (!(pid > 0)) throw 0; process.kill(pid, 'SIGTERM'); console.log('stopped ' + pid); } catch { await f.delete(); console.log('removed stale pid file'); } }\"",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "start": "NODE_ENV=production bun src/main.ts",
+    "build": "bun build src/main.ts --target=bun --outdir=dist --production",
+    "serve:dist": "NODE_ENV=production bun --cwd dist main.js"
   },
   "dependencies": {
-    "@blueshed/railroad": "^0.6.1",
-    "feather-icons": "^4.29.2"
+    "@blueshed/railroad": "^0.15.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "railway": "^3.12.0",
+    "typescript": "^7.0.2"
   }
 }

@@ -1,0 +1,222 @@
+import { test, expect, beforeAll, afterAll, setDefaultTimeout } from "bun:test";
+import { $ } from "bun";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { startServer } from "../src/server";
+
+setDefaultTimeout(30_000); // first browser start can be slow
+
+// The data folder is a scratch one, never the project's real data/
+const dataDir = mkdtempSync(`${tmpdir()}/paintbrush-`);
+// Spawned servers use this pid file, away from a running dev server's
+const pidFile = `${import.meta.dir}/out/.server.pid`;
+// The real `stop` script from package.json, run where that pid file lives
+const pkg = await Bun.file(`${import.meta.dir}/../package.json`).json();
+const stop = () => $`${{ raw: pkg.scripts.stop }}`.cwd(`${import.meta.dir}/out`).text();
+
+let server: ReturnType<typeof startServer>;
+let view: Bun.WebView;
+
+beforeAll(() => {
+  server = startServer({ port: 0, dev: false, dataDir }); // random free port, no HMR
+  view = new Bun.WebView({ width: 1280, height: 800, console: globalThis.console });
+});
+
+afterAll(async () => {
+  view?.close();
+  await server?.stop(true);
+  rmSync(dataDir, { recursive: true, force: true });
+});
+
+// Poll a page-side expression until it is truthy
+async function waitFor(expr: string, timeout = 5_000) {
+  const end = Date.now() + timeout;
+  while (Date.now() < end) {
+    if (await view.evaluate(`Boolean(${expr})`)) return;
+    await Bun.sleep(50);
+  }
+  throw new Error(`Timed out waiting for: ${expr}`);
+}
+
+// Load the page afresh. Navigating to the URL the view is already at does not reload it,
+// so each visit gets a query of its own (the route ignores it).
+let visits = 0;
+const open = () => view.navigate(`${server.url.href}?visit=${++visits}`);
+
+// Run a server process on a random port; resolve once it prints its URL
+async function spawnServer(cmd: string[], env: Record<string, string> = {}) {
+  const proc = Bun.spawn(cmd, {
+    cwd: `${import.meta.dir}/..`,
+    env: { ...process.env, PORT: "0", PID_FILE: pidFile, DATA_PATH: dataDir, ...env },
+    stdout: "pipe",
+  });
+  const reader = proc.stdout.getReader();
+  let out = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) throw new Error(`Server exited without listening:\n${out}`);
+    out += new TextDecoder().decode(value);
+    const url = out.match(/Listening on (\S+)/)?.[1];
+    if (url) {
+      reader.releaseLock();
+      return { proc, url };
+    }
+  }
+}
+
+const api = (path: string, init?: RequestInit) => fetch(new URL(path, server.url), init);
+const putMessage = (body: string) => api("/api/message", { method: "PUT", body });
+
+// Tests run in file order: the first one needs a data folder nothing has been saved to.
+
+test("GET /api/message answers the default before anything is saved", async () => {
+  const res = await api("/api/message");
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual({ message: "Hello from Paintbrush" });
+});
+
+test("PUT /api/message stores the message and GET answers it", async () => {
+  const put = await putMessage(JSON.stringify({ message: "saved" }));
+  expect(put.status).toBe(200);
+  expect(await put.json()).toEqual({ message: "saved" });
+  expect(await (await api("/api/message")).json()).toEqual({ message: "saved" });
+  expect(await Bun.file(`${dataDir}/message.json`).json()).toEqual({ message: "saved" });
+});
+
+test("PUT /api/message refuses a body that is not a message, and keeps the old one", async () => {
+  for (const body of ["not json", "{}", JSON.stringify({ message: 1 })]) {
+    const res = await putMessage(body);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "message must be a string" });
+  }
+  expect(await (await api("/api/message")).json()).toEqual({ message: "saved" });
+});
+
+test("GET /api/status answers what the server knows, but not where its data is", async () => {
+  const status = await (await api("/api/status")).json();
+  expect(status).toEqual({ persistent: false, uptime: expect.any(Number), bun: Bun.version });
+
+  process.env.DATA_PATH = dataDir; // what a Railway volume sets
+  try {
+    expect(((await (await api("/api/status")).json()) as { persistent: boolean }).persistent).toBe(true);
+  } finally {
+    delete process.env.DATA_PATH;
+  }
+});
+
+test("healthcheck answers ok", async () => {
+  expect(await (await api("/health")).text()).toBe("ok");
+});
+
+test("unknown paths return 404", async () => {
+  expect((await api("/nope")).status).toBe(404);
+});
+
+test("home page loads", async () => {
+  await open();
+  expect(await view.evaluate<string>("document.title")).toBe("Paintbrush");
+});
+
+test("the saved message is in the box", async () => {
+  await putMessage(JSON.stringify({ message: "in the box" }));
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "in the box"`);
+});
+
+test("saving says Saved once the server has it, and the message survives a reload", async () => {
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "in the box"`);
+  // clear the box the way typing would, then type
+  await view.evaluate(`(() => { const t = document.querySelector("textarea"); t.value = ""; t.dispatchEvent(new Event("input")); })()`);
+  await view.click("textarea");
+  await view.type("typed in the browser");
+  await view.click("button.primary");
+  await waitFor(`document.querySelector(".toast.show.notify")?.textContent === "Saved"`);
+
+  expect(await (await api("/api/message")).json()).toEqual({ message: "typed in the browser" });
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "typed in the browser"`);
+});
+
+test("a save the server did not take says Not saved", async () => {
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "typed in the browser"`);
+  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
+  await view.click("button.primary");
+  await waitFor(`document.querySelector(".toast.show.alert")?.textContent === "Not saved"`);
+});
+
+test("the status line is shown, and says so when it cannot be loaded", async () => {
+  await open();
+  await waitFor(`document.querySelector("#status .meta")?.textContent.includes("Bun ${Bun.version}")`);
+  expect(await view.evaluate<string>(`document.querySelector("#status .help").textContent`)).toContain("ephemeral");
+
+  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
+  await view.click("#status");
+  await waitFor(`document.querySelector("#status .help")?.textContent === "The status could not be loaded."`);
+});
+
+test("the message says so when it cannot be loaded", async () => {
+  await open();
+  await waitFor(`document.querySelector("textarea")`);
+  await view.evaluate(`window.fetch = async () => new Response(null, { status: 500 })`);
+  // leave the page and come back: the view loads again, into a failing fetch
+  await view.evaluate(`location.hash = "#/elsewhere"`);
+  await waitFor(`document.body.textContent.includes("Page not found!")`);
+  await view.evaluate(`location.hash = "#/"`);
+  await waitFor(`document.body.textContent.includes("The message could not be loaded.")`);
+});
+
+test("main.ts starts the server on $PORT", async () => {
+  const { proc, url } = await spawnServer([process.execPath, "src/main.ts"]);
+  try {
+    expect((await fetch(new URL("/health", url))).status).toBe(200);
+  } finally {
+    proc.kill();
+    await proc.exited;
+  }
+});
+
+test("pid file: a second start is refused, stop stops the server", async () => {
+  const { proc } = await spawnServer([process.execPath, "src/main.ts"]);
+  expect(Number(await Bun.file(pidFile).text())).toBe(proc.pid);
+
+  const second = Bun.spawn([process.execPath, "src/main.ts"], {
+    cwd: `${import.meta.dir}/..`,
+    env: { ...process.env, PORT: "0", PID_FILE: pidFile, DATA_PATH: dataDir },
+    stderr: "pipe",
+  });
+  expect(await second.exited).toBe(1);
+  expect(await new Response(second.stderr).text()).toContain("Already running");
+
+  expect(await stop()).toContain(`stopped ${proc.pid}`);
+  await proc.exited;
+  expect(await Bun.file(pidFile).exists()).toBe(false);
+  expect(await stop()).toContain("not running");
+});
+
+test("pid file: an empty file doesn't block start, and stop removes it", async () => {
+  await Bun.write(pidFile, "");
+  const { proc } = await spawnServer([process.execPath, "src/main.ts"]);
+  proc.kill();
+  await proc.exited;
+  expect(await Bun.file(pidFile).exists()).toBe(false); // removed on shutdown
+
+  await Bun.write(pidFile, "");
+  expect(await stop()).toContain("removed stale pid file");
+});
+
+test("production build serves the page without HMR", async () => {
+  await $`bun run build`.cwd(`${import.meta.dir}/..`).quiet();
+  const { proc, url } = await spawnServer([process.execPath, "--cwd", "dist", "main.js"], {
+    NODE_ENV: "production",
+  });
+  try {
+    const html = await (await fetch(url)).text();
+    expect(html).toContain("<title>Paintbrush</title>");
+    expect(html).not.toContain("data-bun-dev-server-script");
+  } finally {
+    proc.kill();
+    await proc.exited;
+  }
+});
