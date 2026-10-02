@@ -7,7 +7,7 @@ A starter for a [Bun](https://bun.sh) website: **routes and resources**, with [r
 Requires Bun 1.4 or later.
 
 ```sh
-bun create blueshed/paintbrush myapp
+bun create blueshed/paintbrush myapp   # or, from npm: bunx create-blueshed myapp
 cd myapp
 bun dev
 ```

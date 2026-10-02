@@ -57,6 +57,9 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
   times bun create's git step failed that way and setup left one commit and a clean tree, and
   the new app's 17 tests pass at 100%.
 - `todo.jsonl`, the ledger of open work, and a `.claude/launch.json` for the dev server.
+- On npm: `create-blueshed` 0.3.0 (published from the invoket repo) runs `bun create
+  blueshed/paintbrush`, so `bunx create-blueshed myapp`, `bun create blueshed myapp` and
+  `npm create blueshed myapp` all make a paintbrush app. This repo itself is not an npm package.
 
 ### Fixed
 
