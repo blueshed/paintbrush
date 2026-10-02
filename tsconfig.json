@@ -1,13 +1,18 @@
 {
   "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "target": "ESNext",
-    "module": "ESNext",
+    "module": "Preserve",
     "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": true,
-    "skipLibCheck": true,
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
     "jsxImportSource": "@blueshed/railroad",
-    "types": ["bun"],
-  }
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["bun"]
+  },
+  "include": ["src", "tests", "create", ".railway/railway.ts"]
 }

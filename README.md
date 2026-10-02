@@ -2,11 +2,9 @@
 
 # Paintbrush
 
-A starter for building web apps with [Bun](https://bun.sh). Explicit routes, reactive JSX, and typed dependency injection — powered by [@blueshed/railroad](https://github.com/blueshed/railroad).
+A starter for a [Bun](https://bun.sh) website: **routes and resources**, with [railroad](https://github.com/blueshed/railroad) for the page and [Railway](https://railway.com) for the deploy. Explicit routes, reactive JSX, and a resource you can evolve from an HTTP route to a WebSocket, a [delta](https://github.com/blueshed/delta) document, and beyond.
 
-## Quick start
-
-Requires [Bun](https://bun.sh) 1.3.10+.
+Requires Bun 1.4 or later.
 
 ```sh
 bun create blueshed/paintbrush myapp
@@ -14,77 +12,47 @@ cd myapp
 bun dev
 ```
 
-Open `http://localhost:3000`. You get a working app with a single editable message, WebSocket live sync, and a reactive UI.
+Open `http://localhost:3000`. You get an editable message, a line saying whether your data survives a deploy, and tests for all of it.
+
+## Routes and resources
+
+- **Server routes** are `Bun.serve()` routes, all in `src/server.ts`. A route serves a resource: `GET` and `PUT /api/message` over HTTP, or over a WebSocket when it must be realtime.
+- **Client routes** are railroad's hash router, all in `src/app.tsx`. A route draws a resource's view.
+- **A resource** is a folder with three files:
+
+| File | Role |
+|------|------|
+| `<name>-api.ts` | Server handlers: plain functions that return a `Response`, and the type both sides share |
+| `<name>.ts` | The client store: signals and fetch wrappers |
+| `<name>-view.tsx` | The view: a function component, reactive through signals |
+
+Every route and handler is visible in the code. An AI, or a person, can read `server.ts` and `app.tsx` and know exactly what the app does.
+
+## A resource evolves
+
+It starts as HTTP routes. When it must be realtime it gets a WebSocket. When several people share it, it becomes a document in delta, kept in a JSON file, then SQLite, then Postgres, and the browser code does not change. Beyond that is eta. The client route and the view keep their names; what is under them changes. `.claude/skills/evolve/SKILL.md` has each step, with its tests.
 
 ## What's in the box
 
 ```
-server.ts          — Bun.serve() with explicit routes and WebSocket handler
-app.tsx            — client entry: hash router, provide/inject, JSX components
-index.html         — HTML shell (Bun auto-bundles the TypeScript)
-styles.css         — minimal CSS with variables and touch targets
-resources/message/ — starter resource (server + client + view)
-lib/               — app-specific utilities (shared keys, reconnecting WS, toast)
+src/server.ts        Bun.serve(): the routes
+src/main.ts          the entry point: a pid file, so a server started in the background can be stopped
+src/app.tsx          railroad's routes
+src/index.html       the page; Bun bundles the TypeScript and CSS it references
+src/styles.css       the design, with its rules at the top
+src/resources/       message/ and status/, three files each
+tests/               routes with fetch, the page in a real browser (Bun.WebView), the entry point, the build
+.railway/            the deploy, as code, with a volume for the data
 ```
 
-Each resource is a folder with three files:
+`bun dev` serves with hot reload. `bun test` runs everything and fails below 100% coverage. `bun run build` bundles for production, and `.railway/railway.ts` deploys it: `railway config plan` shows what would change, and nothing is applied until you say so.
 
-| File | Role |
-|------|------|
-| `{name}-api.ts` | Server handlers — plain functions that return `Response` |
-| `{name}.ts` | Client store — types, signals, fetch wrappers, WebSocket subscription |
-| `{name}-view.tsx` | JSX functional component — reactive rendering via signals |
+## Made to be worked on with Claude
 
-## Railroad
+`CLAUDE.md` says what is here, what not to use, and how to add a resource. `todo.jsonl` is the ledger of open work and `CHANGELOG.md` is where the project has been. In the Claude Code web sandbox, whose Bun is older and which has no browser, a SessionStart hook installs both; CI does the same on GitHub.
 
-Paintbrush uses [@blueshed/railroad](https://github.com/blueshed/railroad) for its core primitives:
+## Starting from it
 
-- **Signals** — `signal()`, `computed()`, `effect()`, `batch()`
-- **JSX** — real DOM, no virtual DOM. Signal-aware props and children
-- **Routes** — hash-based client router with automatic dispose scoping
-- **Shared** — typed `provide()`/`inject()` for dependency injection
-- **Logger** — `createLogger()`, `loggedRequest()` for server-side logging
-
-```json
-// tsconfig.json — JSX just works, no imports needed
-{
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "@blueshed/railroad"
-  }
-}
-```
-
-## Adding resources
-
-Using [Claude Code](https://claude.com/claude-code)? Type `/add-resource` to scaffold a new resource with all files and wiring.
-
-Manually: create a folder under `resources/`, add the three files following the message pattern, then wire the routes in `server.ts` and `app.tsx`.
-
-## How it works
-
-**Server:** Routes map directly to handler functions. No decorators, no metadata, no magic. WebSocket pub/sub notifies clients after mutations.
-
-**Client:** Signals provide lightweight reactivity. JSX functional components return real DOM nodes. `when()`, `list()`, and `text()` handle conditional rendering, reactive lists, and computed text.
-
-**WebSocket:** One shared connection, multiplexed with `opendoc`/`closedoc` messages. The server whitelists topics in a `Set`.
-
-## CSS
-
-All colours are CSS custom properties in `:root`. Touch targets scale up on touch devices via `@media (pointer: coarse)`. Run `bun run sample` to see the living style guide.
-
-## Design decisions
-
-- **No build step.** Bun bundles TypeScript and TSX from `index.html` automatically.
-- **No virtual DOM.** Signals drive targeted updates. JSX creates real DOM elements.
-- **Railroad for primitives.** Signals, JSX, routing, and DI from one ~400-line package.
-- **REST is the write path.** WebSocket is notification-only. Clients write via fetch, receive updates via pub/sub.
-- **Explicit over implicit.** Every route and handler is visible in the code. An AI (or a human) can read `server.ts` and know exactly what the app does.
-
-## Built with Claude
-
-This codebase was written with [Claude Code](https://claude.com/claude-code) (Anthropic's Claude Opus). From the signal system and hash router to the resource scaffolding, WebSocket protocol, and deployment config — Claude has been an outstanding collaborator: fast, careful, and genuinely good at thinking through trade-offs before writing code.
-
-## License
+`bun create` runs `create/setup.ts` after installing: your app gets its own name, a fresh ledger and changelog, railroad's skill, and a first commit. The template's logo, the script and its test are not copied across.
 
 MIT

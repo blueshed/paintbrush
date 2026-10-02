@@ -1,8 +1,8 @@
 node_modules/
-*.tmp.json
-*.tmp.db*
+.server.pid
+tests/out/
+data/
+dist/
 .env
 .DS_Store
-data/
-demo/data/
-resources/message/message.json
+.claude/settings.local.json
