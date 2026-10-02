@@ -53,7 +53,9 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
   skill, which tells a session to run `bun init` and use Playwright). It refuses to run in a
   clone of the template, and ends by leaving the new repository committed: bun create's own git
   step runs while the script does and can fail on a file the script has just deleted (found
-  when a new app had no first commit).
+  when a new app had no first commit). Run from GitHub on `main` after the merge, twice: both
+  times bun create's git step failed that way and setup left one commit and a clean tree, and
+  the new app's 17 tests pass at 100%.
 - `todo.jsonl`, the ledger of open work, and a `.claude/launch.json` for the dev server.
 
 ### Fixed
