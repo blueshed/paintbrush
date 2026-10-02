@@ -111,3 +111,67 @@ test("every file setup renames exists, and the template's name is nowhere else",
   }
   expect(strays).toEqual([]);
 });
+
+// --- Leaving the repository committed, whatever bun create's own git step managed ---
+
+const git = (root: string, ...args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root }).stdout.toString().trim();
+
+// A scratch app folder that is a git repository, with a commit of the given subject if there is one
+async function scratchRepo(commit?: string) {
+  const scratch = await scratchTemplate({ "todo.jsonl": '{"n": 1}\n' });
+  git(scratch.root, "init", "-q");
+  git(scratch.root, "config", "user.name", "Test");
+  git(scratch.root, "config", "user.email", "test@example.com");
+  if (commit) {
+    git(scratch.root, "add", "-A");
+    git(scratch.root, "commit", "-q", "-m", commit);
+  }
+  return scratch;
+}
+
+test("a repository with no commit gets one, with everything in it", async () => {
+  const { root, done } = await scratchRepo();
+  try {
+    await setup(root);
+    expect(git(root, "log", "--format=%s")).toBe("Initial commit (via bun create)");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  } finally {
+    done();
+  }
+});
+
+test("bun create's own commit is amended with what setup wrote after it", async () => {
+  const { root, done } = await scratchRepo("Initial commit (via bun create)");
+  try {
+    await setup(root); // empties todo.jsonl, writes a README and a changelog: all after that commit
+    expect(git(root, "rev-list", "--count", "HEAD")).toBe("1");
+    expect(git(root, "log", "--format=%s")).toBe("Initial commit (via bun create)");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  } finally {
+    done();
+  }
+});
+
+test("somebody else's history is left alone", async () => {
+  const { root, done } = await scratchRepo("Add things");
+  try {
+    await setup(root);
+    expect(git(root, "log", "--format=%s")).toBe("Add things");
+    expect(git(root, "status", "--porcelain")).not.toBe(""); // setup's changes are not committed
+  } finally {
+    done();
+  }
+});
+
+test("setup waits out a git lock, and commits once it clears", async () => {
+  const { root, done } = await scratchRepo();
+  try {
+    await Bun.write(join(root, ".git/index.lock"), ""); // what bun create's own git step holds while it runs
+    setTimeout(() => rmSync(join(root, ".git/index.lock")), 500);
+    await setup(root);
+    expect(git(root, "log", "--format=%s")).toBe("Initial commit (via bun create)");
+    expect(git(root, "status", "--porcelain")).toBe("");
+  } finally {
+    done();
+  }
+});

@@ -54,7 +54,10 @@ nearly everything.
 - A CI workflow: typecheck and `bun test`, with Chrome for the browser tests.
 - `create/setup.ts`, the template's `bun create` postinstall: a fresh `todo.jsonl` and
   `CHANGELOG.md`, the app's name, and railroad's skills in `.claude/skills`. It refuses to run
-  in a clone of the template.
+  in a clone of the template, and finishes by leaving the new repository committed: bun create's
+  own git step runs while the script does and can fail on a file the script has just deleted
+  (found when a new app had no first commit), so setup makes the commit, or amends bun create's
+  with everything.
 - `todo.jsonl`, the ledger of open work, and a `.claude/launch.json` for the dev server.
 
 ### Fixed

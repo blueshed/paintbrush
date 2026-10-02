@@ -29,6 +29,28 @@ function isTemplateClone(root: string) {
   return /blueshed\/paintbrush(\.git)?\s*$/.test(origin);
 }
 
+// bun create commits on a thread of its own while this script runs. Its `git add` can meet a
+// file this script has just deleted ("unable to stat") and give up, leaving no commit at all,
+// or commit before the skills are copied. So the last thing setup does is leave the repository
+// committed, whatever bun create managed: no commit yet, make it; bun create's, amend it with
+// everything; anything else is somebody's history, and is left alone.
+async function commitEverything(root: string) {
+  if (!existsSync(join(root, ".git"))) return; // bun create's git step has not started: it will see the finished folder
+  const git = (...args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root });
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const last = git("log", "-1", "--format=%s");
+    const subject = last.exitCode === 0 ? last.stdout.toString().trim() : null; // null: no commits yet
+    if (subject !== null && !/^initial commit/i.test(subject)) return;
+
+    git("add", "-A");
+    const committed =
+      subject === null ? git("commit", "-q", "-m", "Initial commit (via bun create)") : git("commit", "-q", "--amend", "--no-edit");
+    if (committed.exitCode === 0 || git("status", "--porcelain").stdout.toString() === "") return;
+    await Bun.sleep(300); // an index.lock: bun create's own git step is still running
+  }
+}
+
 export async function setup(root: string) {
   if (isTemplateClone(root)) throw new Error(`${root} is a clone of the paintbrush template: setup would delete its ledger and changelog`);
 
@@ -59,6 +81,8 @@ export async function setup(root: string) {
   } else {
     console.warn("  no railroad skills found: after `bun install`, copy node_modules/@blueshed/railroad/.claude/skills into .claude/skills");
   }
+
+  await commitEverything(root);
 
   console.log(`
   ${name} is ready!
