@@ -1,5 +1,3 @@
-> **Archived.** Paintbrush was a getting-started starter for Bun routes, HTML imports and Railway. Its successor is [create-blueshed](https://github.com/blueshed/invoket/tree/main/packages/create-blueshed): `bunx create-blueshed my-app`. Its sync layer lives on in [@blueshed/delta](https://github.com/blueshed/delta) and its UI in [@blueshed/railroad](https://github.com/blueshed/railroad).
-
 <p align="center"><img src="./logo.png" alt="Logo" width="120"></p>
 
 # Paintbrush
