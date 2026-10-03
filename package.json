@@ -15,9 +15,7 @@
     "stop": "bun -e \"const f = Bun.file('.server.pid'); if (!(await f.exists())) console.log('not running'); else { const pid = Number(await f.text()); try { if (!(pid > 0)) throw 0; process.kill(pid, 'SIGTERM'); console.log('stopped ' + pid); } catch { await f.delete(); console.log('removed stale pid file'); } }\"",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "start": "NODE_ENV=production bun src/main.ts",
-    "build": "bun build src/main.ts --target=bun --outdir=dist --production",
-    "serve:dist": "NODE_ENV=production bun --cwd dist main.js"
+    "start": "NODE_ENV=production bun src/main.ts"
   },
   "dependencies": {
     "@blueshed/railroad": "^0.15.1"

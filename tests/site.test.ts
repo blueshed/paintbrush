@@ -270,7 +270,7 @@ test("after the server restarts, the page loads what changed meanwhile and follo
   await waitFor(`document.querySelector("textarea")?.value === "after the restart"`);
 });
 
-// --- The entry point, the sandbox hook and the build ---
+// --- The entry point and the sandbox hook ---
 
 test("main.ts starts the server on $PORT", async () => {
   const { proc, url } = await spawnServer([process.execPath, "src/main.ts"]);
@@ -322,11 +322,8 @@ test("the web sandbox hook does nothing anywhere else", async () => {
   expect(await new Response(hook.stdout).text()).toBe("");
 });
 
-test("production build serves the page without HMR", async () => {
-  await $`bun run build`.cwd(`${import.meta.dir}/..`).quiet();
-  const { proc, url } = await spawnServer([process.execPath, "--cwd", "dist", "main.js"], {
-    NODE_ENV: "production",
-  });
+test("in production the page is served from source, without HMR", async () => {
+  const { proc, url } = await spawnServer([process.execPath, "src/main.ts"], { NODE_ENV: "production" });
   try {
     const html = await (await fetch(url)).text();
     expect(html).toContain("<title>Paintbrush</title>");

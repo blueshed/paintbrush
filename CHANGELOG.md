@@ -41,27 +41,35 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
   does, so the skill describes it instead of giving an echo socket. Step 3 (delta) removes the
   app's `/ws` along with the message routes, and its tests are rewritten for that. It was
   applied to a scratch copy and run: 15 site tests pass at 100%, three runs.
-
+- **`CLAUDE.md` holds what every session needs, and the skill holds the how.** `CLAUDE.md` is
+  44 lines of what is here and the rules, and sends adding or changing a resource to the
+  `evolve` skill. The skill's `SKILL.md` is the ladder, a workflow and a list of sections. Its
+  `references.md`, read only when needed, has a table of contents and one section per task,
+  each with code and tests: add a resource, push over the WebSocket, SQLite, S3, a delta
+  document, eta, and an optional build.
+- **No build.** A hello world runs from source: `bun run start` serves `src/main.ts` with hot
+  reload off, and Bun bundles the page on its first request. The `build` and `serve:dist`
+  scripts and the build test are gone, Railway runs `bun install` then `bun run start`, and
+  `bun test` no longer leaves a `dist/` behind. A build is an optional section of the skill's
+  references.
 - railroad is `^0.15.1` (was `^0.6.1`); Bun is 1.4 or later; TypeScript 7.
-- `CLAUDE.md` is written in routes and resources, and short. The rules sit next to what they
-  describe: the design's at the top of `styles.css` (108 lines, from 268: only what the page
-  uses), the browser-test rules at the top of the test file, the Railway rules at the top of
-  `railway.ts`.
+- The rules sit next to what they describe: the design's at the top of `styles.css` (108 lines,
+  from 268: only what the page uses), the browser-test rules at the top of the test file, the
+  Railway rules at the top of `railway.ts`.
 
 ### Added
 
-- `CLAUDE.md` shows how to use SQLite (`bun:sqlite`) and S3 (`Bun.s3`) as resources, with their
-  handlers, their routes and their tests, including a stand-in S3 bucket of a few lines so tests
+- The `evolve` skill's references show how to use SQLite (`bun:sqlite`) and S3 (`Bun.s3`) as
+  resources, with their handlers, their routes and their tests, including a stand-in S3 bucket of a few lines so tests
   need no real one. These are not in the box. Run on Bun 1.4.2 in a scratch copy: S3 against
   MinIO and against the stand-in, and the copy's whole suite at 100%.
-
 - A pid file and `bun run stop`, so a server started in the background can be stopped.
 - Tests, held at 100% coverage: every route and method with `fetch`, the page and what it does
   in a real browser (`Bun.WebView`), the entry point and pid file by spawning them, the
-  production build, and `create/setup.ts`. `bun run typecheck` checks the app, the tests,
+  production server running from source, and `create/setup.ts`. `bun run typecheck` checks the app, the tests,
   `create/` and `railway.ts`.
-- The deploy in the box: `bun run build` and `serve:dist`, `/health`, and `.railway/railway.ts`
-  with a volume for the data.
+- The deploy in the box: `bun run start`, `/health`, and `.railway/railway.ts` with a volume for
+  the data.
 - The Claude Code web sandbox, whose Bun is older than this app needs and which has no browser:
   a SessionStart hook (railroad's, adapted) installs the latest Bun and a headless Chromium
   there, and does nothing anywhere else. A CI workflow runs the typecheck and the tests on

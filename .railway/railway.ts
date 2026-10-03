@@ -22,8 +22,8 @@ import { defineRailway, github, project, service, volume } from "railway/iac";
 export default defineRailway(() => {
   const web = service("web", {
     source: github("OWNER/REPO", { branch: "main" }),
-    build: "bun install && bun run build",
-    start: "bun run serve:dist", // dist/ is where the built server finds its bundled JS and CSS
+    build: "bun install",
+    start: "bun run start", // runs from source: Bun bundles the page on its first request
     healthcheck: "/health",
     env: {
       NODE_ENV: "production",

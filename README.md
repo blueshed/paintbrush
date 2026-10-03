@@ -22,7 +22,7 @@ Open `http://localhost:3000` in two windows. You get a message you can edit, and
 - **Files** are `Bun.file` and `Bun.write`: the message is a JSON file in the data folder.
 - **Tests** are `bun test`. Routes are tested with `fetch`, and the page in a real browser with `Bun.WebView`. The run fails below 100% coverage.
 
-When a resource needs more than a JSON file, Bun has that too. `CLAUDE.md` shows how, with the tests:
+When a resource needs more than a JSON file, Bun has that too. The `evolve` skill's `references.md` shows how, with the tests:
 
 - **SQLite** with `bun:sqlite`: a database in one file on the data volume.
 - **S3** with `Bun.s3`: files in a bucket (AWS, R2, a Railway bucket, MinIO). A `GET` answers a redirect to a presigned URL, so the bytes never pass through your server.
@@ -43,7 +43,7 @@ Every route and handler is visible in the code. An AI, or a person, can read `se
 
 ## A resource evolves
 
-It starts as HTTP routes, and a WebSocket tells every page what changed. When several people edit the same thing at once, it becomes a document in delta. delta keeps it in a JSON file, then SQLite, then Postgres, and the browser code does not change. Beyond that is eta. The client route and the view keep their names; what is under them changes. `.claude/skills/evolve/SKILL.md` has each step, with its tests.
+It starts as HTTP routes, and a WebSocket tells every page what changed. When several people edit the same thing at once, it becomes a document in delta. delta keeps it in a JSON file, then SQLite, then Postgres, and the browser code does not change. Beyond that is eta. The client route and the view keep their names; what is under them changes. The `evolve` skill has each step, with its tests.
 
 ## What's in the box
 
@@ -54,15 +54,15 @@ src/app.tsx          railroad's routes
 src/index.html       the page; Bun bundles the TypeScript and CSS it references
 src/styles.css       the design, with its rules at the top
 src/resources/       message/ and status/, three files each
-tests/               routes with fetch, the page in a real browser (Bun.WebView), the entry point, the build
+tests/               routes with fetch, the page in a real browser (Bun.WebView), the entry point
 .railway/            the deploy, as code, with a volume for the data
 ```
 
-`bun dev` serves with hot reload. `bun test` runs everything. `bun run build` bundles for production, and `.railway/railway.ts` deploys it: `railway config plan` shows what would change, and nothing is applied until you say so.
+`bun dev` serves with hot reload, and `bun run start` serves the same source in production, with nothing to build. `bun test` runs everything. `.railway/railway.ts` deploys it: `railway config plan` shows what would change, and nothing is applied until you say so.
 
 ## Made to be worked on with Claude
 
-`CLAUDE.md` says what is here, what not to use, and how to add a resource. `todo.jsonl` is the ledger of open work and `CHANGELOG.md` is where the project has been. The Claude Code web sandbox has an older Bun and no browser, so a SessionStart hook installs both there; CI does the same on GitHub.
+`CLAUDE.md` says what is here and the rules. The `evolve` skill (`.claude/skills/evolve/`) is how to add or change a resource, and its `references.md` has each step with code and tests. `todo.jsonl` is the ledger of open work and `CHANGELOG.md` is where the project has been. The Claude Code web sandbox has an older Bun and no browser, so a SessionStart hook installs both there; CI does the same on GitHub.
 
 ## Starting from it
 
