@@ -139,6 +139,18 @@ test("unknown paths return 404", async () => {
   expect((await api("/nope")).status).toBe(404);
 });
 
+test("/ws upgrades, and a socket is told every saved message", async () => {
+  expect((await api("/ws")).status).toBe(426); // plain HTTP
+
+  const ws = new WebSocket(new URL("/ws", server.url.href.replace("http", "ws")));
+  await new Promise((open) => (ws.onopen = open));
+  ws.send("ignored"); // the page only listens; the server takes no notice
+  const told = new Promise<string>((done) => (ws.onmessage = (e) => done(String(e.data))));
+  await putMessage(JSON.stringify({ message: "pushed" }));
+  expect(JSON.parse(await told)).toEqual({ message: "pushed" });
+  ws.close();
+});
+
 // --- The page, in a real browser ---
 
 test("home page loads", async () => {
@@ -189,6 +201,73 @@ test("a message and a status that cannot be loaded say so", async () => {
   await view.evaluate(`location.hash = "#/"`);
   await waitFor(`document.body.textContent.includes("The message could not be loaded.")`);
   await waitFor(`document.body.textContent.includes("The status could not be loaded.")`);
+});
+
+// A second window, for the tests that need two: opened at the page, closed in a finally
+async function withOtherWindow(run: (other: Bun.WebView, waitForOther: (expr: string) => Promise<void>) => Promise<void>) {
+  const other = new Bun.WebView({ width: 1280, height: 800, console: globalThis.console });
+  const waitForOther = async (expr: string, timeout = 5_000) => {
+    const end = Date.now() + timeout;
+    while (Date.now() < end) {
+      if (await other.evaluate(`Boolean(${expr})`)) return;
+      await Bun.sleep(50);
+    }
+    throw new Error(`Timed out waiting in the other window for: ${expr}`);
+  };
+  try {
+    await other.navigate(`${server.url.href}?other=${++visits}`);
+    await run(other, waitForOther);
+  } finally {
+    other.close();
+  }
+}
+
+test("a save shows in another window, and so does that window's save afterwards", async () => {
+  await putMessage(JSON.stringify({ message: "two windows" }));
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "two windows"`);
+  await withOtherWindow(async (other, waitForOther) => {
+    await waitForOther(`document.querySelector("textarea")?.value === "two windows"`);
+
+    await replaceText("textarea", "from the first");
+    await view.click("button.primary");
+    await waitForOther(`document.querySelector("textarea")?.value === "from the first"`);
+
+    await other.click("textarea");
+    await other.type("!");
+    await other.click("button.primary");
+    await waitFor(`document.querySelector("textarea")?.value === "from the first!"`);
+  });
+});
+
+test("typing that is not saved is not overwritten by another window's save", async () => {
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "from the first!"`);
+  await replaceText("textarea", "half-typed");
+  await withOtherWindow(async (other, waitForOther) => {
+    await waitForOther(`document.querySelector("textarea")?.value === "from the first!"`);
+    await other.click("textarea");
+    await other.type("?");
+    await other.click("button.primary");
+    await waitForOther(`document.querySelector(".toast.show.notify")?.textContent === "Saved"`);
+  });
+  expect(await (await api("/api/message")).json()).toEqual({ message: "from the first!?" });
+  await Bun.sleep(300); // time for the push to arrive, had it been taken
+  expect(await view.evaluate<string>(`document.querySelector("textarea").value`)).toBe("half-typed");
+});
+
+test("after the server restarts, the page loads what changed meanwhile and follows again", async () => {
+  await open();
+  await waitFor(`document.querySelector("textarea")?.value === "from the first!?"`);
+
+  const port = server.port;
+  await server.stop(true); // closes the page's socket
+  await Bun.write(`${dataDir}/message.json`, JSON.stringify({ message: "changed while down" }));
+  server = startServer({ port, dev: false, dataDir });
+  await waitFor(`document.querySelector("textarea")?.value === "changed while down"`);
+
+  await putMessage(JSON.stringify({ message: "after the restart" }));
+  await waitFor(`document.querySelector("textarea")?.value === "after the restart"`);
 });
 
 // --- The entry point, the sandbox hook and the build ---

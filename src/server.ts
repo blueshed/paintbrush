@@ -25,8 +25,20 @@ export function startServer({
       "/api/message": { GET: message.get, PUT: message.put },
       "/api/status": { GET: status.get },
 
+      // One WebSocket: the server pushes on it, the page listens (see websocket below)
+      "/ws": (req, server) =>
+        server.upgrade(req) ? undefined : new Response("Upgrade required", { status: 426 }),
+
       // Railway healthcheck
       "/health": new Response("ok"),
+    },
+
+    // Every socket subscribes to each resource's topic; a handler publishes with server.publish
+    websocket: {
+      open(ws) {
+        ws.subscribe("message");
+      },
+      message() {}, // the page only listens
     },
 
     // Anything not matched by a route

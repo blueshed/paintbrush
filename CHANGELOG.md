@@ -29,6 +29,19 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
 
 ### Changed
 
+- **Bun comes first.** The README and `CLAUDE.md` open with Bun as the server of routes and
+  resources, with a WebSocket, SQLite and S3 built in; railroad and Railway come after, as the
+  way on.
+- **`message` pushes over a WebSocket.** `/ws` is the app's one socket. Each socket subscribes to
+  the `message` topic, and `PUT /api/message` publishes what it saved with `server.publish`, so
+  every open page follows. The view keeps typing that has not been saved. The store opens the
+  socket again when it closes, and loads the message again in case a save was missed. A
+  resource without a push (`status`) is still plain HTTP.
+- **The `evolve` skill starts from the new app.** Step 2 (a WebSocket) is now what `message`
+  does, so the skill describes it instead of giving an echo socket. Step 3 (delta) removes the
+  app's `/ws` along with the message routes, and its tests are rewritten for that. It was
+  applied to a scratch copy and run: 15 site tests pass at 100%, three runs.
+
 - railroad is `^0.15.1` (was `^0.6.1`); Bun is 1.4 or later; TypeScript 7.
 - `CLAUDE.md` is written in routes and resources, and short. The rules sit next to what they
   describe: the design's at the top of `styles.css` (108 lines, from 268: only what the page
@@ -36,6 +49,11 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
   `railway.ts`.
 
 ### Added
+
+- `CLAUDE.md` shows how to use SQLite (`bun:sqlite`) and S3 (`Bun.s3`) as resources, with their
+  handlers, their routes and their tests, including a stand-in S3 bucket of a few lines so tests
+  need no real one. These are not in the box. Run on Bun 1.4.2 in a scratch copy: S3 against
+  MinIO and against the stand-in, and the copy's whole suite at 100%.
 
 - A pid file and `bun run stop`, so a server started in the background can be stopped.
 - Tests, held at 100% coverage: every route and method with `fetch`, the page and what it does
@@ -62,6 +80,11 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
   `npm create blueshed myapp` all make a paintbrush app. This repo itself is not an npm package.
 
 ### Fixed
+
+- The `evolve` skill's step 3 view stopped following the other windows once it had saved
+  itself: it took a new value only when the box still held what it last took from the document,
+  and after a save the box held the saved text instead. It now also takes a value the box
+  already holds. The bug showed when a test was added for it.
 
 From the 24 Sep review of 0.2.4:
 
