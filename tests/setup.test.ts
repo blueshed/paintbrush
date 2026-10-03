@@ -33,6 +33,8 @@ test("setup turns the template into an app", async () => {
 
     expect(await Bun.file(join(root, "todo.jsonl")).text()).toBe(""); // a fresh ledger
     expect(await Bun.file(join(root, "CHANGELOG.md")).text()).toContain("## [Unreleased]");
+    // the template's version, so the app knows which of the template's changes it has
+    expect(await Bun.file(join(root, "CHANGELOG.md")).text()).toContain("- Started from [paintbrush](https://github.com/blueshed/paintbrush) 0.5.0. To bring this app up to date,");
     // what is about the template goes: its logo, this script and its test
     for (const path of ["logo.png", "create/setup.ts", "tests/setup.test.ts"]) {
       expect(await Bun.file(join(root, path)).exists()).toBe(false);
