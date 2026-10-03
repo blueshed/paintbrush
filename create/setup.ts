@@ -59,13 +59,16 @@ export async function setup(root: string) {
   for (const path of ["todo.jsonl", "CHANGELOG.md", "logo.png", "create", "tests/setup.test.ts"]) {
     rmSync(join(root, path), { recursive: true, force: true });
   }
-  await Bun.write(join(root, "todo.jsonl"), "");
-  await Bun.write(join(root, "CHANGELOG.md"), changelog);
-  await Bun.write(join(root, "README.md"), readme(name));
-
-  // The app's own version, not the template's: its first `/release minor` makes 0.1.0
+  // The template's version goes in the changelog, so the app knows which of the template's changes
+  // it has. The app's own version starts at 0.0.0, so its first `/release minor` makes 0.1.0.
   const pkg = Bun.file(join(root, "package.json"));
-  if (await pkg.exists()) await Bun.write(pkg, (await pkg.text()).replace(/"version": "[^"]*"/, '"version": "0.0.0"'));
+  const pkgText = (await pkg.exists()) ? await pkg.text() : "";
+  const from = pkgText.match(/"version": "([^"]*)"/)?.[1];
+  if (pkgText) await Bun.write(pkg, pkgText.replace(/"version": "[^"]*"/, '"version": "0.0.0"'));
+
+  await Bun.write(join(root, "todo.jsonl"), "");
+  await Bun.write(join(root, "CHANGELOG.md"), changelog(from));
+  await Bun.write(join(root, "README.md"), readme(name));
 
   for (const path of NAMED) {
     const file = Bun.file(join(root, path));
@@ -101,7 +104,7 @@ export async function setup(root: string) {
 `);
 }
 
-const changelog = `# Changelog
+const changelog = (from?: string) => `# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -109,7 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-- Started from [paintbrush](https://github.com/blueshed/paintbrush).
+- Started from [paintbrush](https://github.com/blueshed/paintbrush)${from ? ` ${from}. To bring this app up to date, read [its changelog](https://github.com/blueshed/paintbrush/blob/main/CHANGELOG.md) from that version on` : ""}.
 `;
 
 const readme = (name: string) => `# ${name}

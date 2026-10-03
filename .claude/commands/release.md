@@ -15,10 +15,11 @@ Running this is the authority to release, which includes the push. Carry it thro
 
 ## 1. Check
 
-1. On `main`, with a clean tree (`git status --porcelain` prints nothing), and not behind `origin/main` (`git fetch`, then `git rev-list --count HEAD..origin/main` is `0`).
-2. `## [Unreleased]` in `CHANGELOG.md` has entries. None means nothing to release: stop and say so.
-3. The pair agrees. Every `fixed` item in `todo.jsonl` has a changelog entry under `[Unreleased]` that settles it, and a dated `note` saying so; a `not fixed` item has a `note` saying why. Report any that don't, and stop: fix the record first.
-4. The new version: bump `package.json`'s `version` by the argument, or take the exact one. Its tag `vX.Y.Z` must not exist (`git rev-parse -q --verify refs/tags/vX.Y.Z` prints nothing). If it does, stop and name the next free version: never reuse or move a tag.
+1. There is a remote to push to (`git remote get-url origin`). None means the app has never been pushed: stop, and say to add one first (`gh repo create <owner>/<name> --source . --push`, private unless the user says otherwise).
+2. On `main`, with a clean tree (`git status --porcelain` prints nothing), and not behind `origin/main` (`git fetch`, then `git rev-list --count HEAD..origin/main` is `0`).
+3. `## [Unreleased]` in `CHANGELOG.md` has entries. None means nothing to release: stop and say so.
+4. The pair agrees. Every `fixed` item in `todo.jsonl` has a changelog entry under `[Unreleased]` that settles it, and a dated `note` saying so; a `not fixed` item has a `note` saying why. Report any that don't, and stop: fix the record first.
+5. The new version: bump `package.json`'s `version` by the argument, or take the exact one. Its tag `vX.Y.Z` must not exist (`git rev-parse -q --verify refs/tags/vX.Y.Z` prints nothing). If it does, stop and name the next free version: never reuse or move a tag.
 
 ## 2. Gate
 

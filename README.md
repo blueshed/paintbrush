@@ -66,6 +66,6 @@ tests/               routes with fetch, the page in a real browser (Bun.WebView)
 
 ## Starting from it
 
-`bun create` runs `create/setup.ts` after installing. Your app gets its own name, a fresh ledger and changelog, railroad's skill, and a first commit. The template's logo, the script and its test are not copied across.
+`bun create` runs `create/setup.ts` after installing. Your app gets its own name, a fresh ledger and changelog, railroad's skill, and a first commit. The template's logo, the script and its test are not copied across. The app's changelog starts by naming the paintbrush version it came from: to bring an app up to date, read this changelog from that version on, and carry across what applies.
 
 MIT

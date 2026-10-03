@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- A new app's changelog names the paintbrush version it came from ("Started from paintbrush
+  0.5.0"), with a link to this changelog: an app has no link back to the template, so updating
+  one means reading what changed since that version and carrying across what applies. Found
+  when limakilo, made from the template that morning, needed `/release` and had no record of
+  which paintbrush it came from.
+
+### Changed
+
+- `/release` checks first that there is a remote to push to, and says how to add one if not. An
+  app made by `bun create` has none until someone adds it (limakilo had none), and the release
+  would otherwise fail at the push, after the commit and the tag.
+
 ## [0.5.0] - 2026-10-03
 
 Paintbrush is again what it was for: routes and resources, with railroad for the page and
