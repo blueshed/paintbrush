@@ -93,7 +93,7 @@ export async function setup(root: string) {
   bun test           # tests, held at 100% coverage
   bun run typecheck  # tsc
 
-  Read CLAUDE.md first: it says what is here and how a resource evolves.
+  Read CLAUDE.md first: it says what is here. The evolve skill adds or changes a resource.
 `);
 }
 
@@ -110,16 +110,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 const readme = (name: string) => `# ${name}
 
-A Bun website with railroad for the page and Railway for the deploy, started from
-[paintbrush](https://github.com/blueshed/paintbrush).
+A Bun website of routes and resources, with railroad for the page and Railway for
+the deploy, started from [paintbrush](https://github.com/blueshed/paintbrush).
+
+Open it in two windows: a save in one shows in the other.
 
 \`\`\`sh
-bun dev            # http://localhost:3000
+bun dev            # http://localhost:3000, hot reload
+bun run start      # the same source in production: nothing to build
 bun test           # tests, held at 100% coverage
 bun run typecheck
 \`\`\`
 
-CLAUDE.md says what is here and how a resource evolves. \`todo.jsonl\` is the
+\`CLAUDE.md\` says what is here and the rules. The \`evolve\` skill adds or changes a
+resource: a route, a live push, SQLite, S3, a delta document. \`todo.jsonl\` is the
 ledger of open work; \`CHANGELOG.md\` records what has changed.
 `;
 
