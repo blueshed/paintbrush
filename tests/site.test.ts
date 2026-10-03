@@ -159,6 +159,13 @@ test("home page loads", async () => {
   await waitFor(`document.querySelector("h1")?.textContent === "Message"`);
 });
 
+test("the Save button has its lucide icon, hidden from screen readers", async () => {
+  await open();
+  await waitFor(`document.querySelector("button.primary svg.icon")`);
+  expect(await view.evaluate<string | null>(`document.querySelector("button.primary svg").getAttribute("aria-hidden")`)).toBe("true");
+  expect(await view.evaluate<string>(`document.querySelector("button.primary").textContent.trim()`)).toBe("Save");
+});
+
 test("the saved message is in the box", async () => {
   await putMessage(JSON.stringify({ message: "in the box" }));
   await open();

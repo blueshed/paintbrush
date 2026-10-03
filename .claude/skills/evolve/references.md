@@ -21,6 +21,7 @@ Rules for handlers:
 - A `Bun.file(path)` that found no file keeps saying so after `Bun.write` creates it: make a new one for each read.
 - The view says "Saved" only once the server has said so, and says so when a load or a save fails.
 - A collection that changes length is drawn with `list()`, never `.map()`.
+- Icons are lucide, through `src/resources/icon.tsx`: `import { Trash2 } from "lucide"`, then `<Icon icon={Trash2} />` beside a label, or `<Icon icon={Trash2} label="Delete" />` alone, which is then read out. A test can find it as `svg.icon`.
 
 `src/resources/<name>/<name>-api.ts`, following `message-api.ts`:
 

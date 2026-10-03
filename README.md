@@ -53,7 +53,7 @@ src/main.ts          the entry point: a pid file, so a server started in the bac
 src/app.tsx          railroad's routes
 src/index.html       the page; Bun bundles the TypeScript and CSS it references
 src/styles.css       the design, with its rules at the top
-src/resources/       message/ and status/, three files each
+src/resources/       message/ and status/, three files each, a toast, and an Icon for lucide icons
 tests/               routes with fetch, the page in a real browser (Bun.WebView), the entry point
 .railway/            the deploy, as code, with a volume for the data
 ```

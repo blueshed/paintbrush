@@ -18,7 +18,8 @@
     "start": "NODE_ENV=production bun src/main.ts"
   },
   "dependencies": {
-    "@blueshed/railroad": "^0.15.1"
+    "@blueshed/railroad": "^0.15.1",
+    "lucide": "^1.51.0"
   },
   "devDependencies": {
     "@types/bun": "^1.4.2",

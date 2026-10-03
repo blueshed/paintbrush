@@ -59,6 +59,11 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
 
 ### Added
 
+- **Icons are lucide, from the start.** `lucide` is a dependency, and `src/resources/icon.tsx` draws
+  an icon as a real SVG node (`<Icon icon={Save} />`), sized by the text around it, hidden from
+  screen readers beside a label and read out as `label` when alone. The Save button has one, and
+  a browser test checks it. `CLAUDE.md` makes it the rule: lucide, through `<Icon>`, never
+  another icon set or inline SVG.
 - The `evolve` skill's references show how to use SQLite (`bun:sqlite`) and S3 (`Bun.s3`) as
   resources, with their handlers, their routes and their tests, including a stand-in S3 bucket of a few lines so tests
   need no real one. These are not in the box. Run on Bun 1.4.2 in a scratch copy: S3 against

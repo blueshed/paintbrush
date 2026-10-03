@@ -1,4 +1,6 @@
 import { effect, signal, when } from "@blueshed/railroad";
+import { Save } from "lucide";
+import { Icon } from "../icon";
 import { toast } from "../toast";
 import { load, message, save } from "./message";
 
@@ -40,7 +42,9 @@ export function MessageView() {
         }}
       ></textarea>
       <div class="toolbar">
-        <button class="primary" onclick={onsave}>Save</button>
+        <button class="primary" onclick={onsave}>
+          <Icon icon={Save} /> Save
+        </button>
       </div>
       <p class="help">Edit the message above and hit <strong>Save</strong>: every open page shows it.</p>
     </>

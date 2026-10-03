@@ -25,7 +25,7 @@ src/
   index.html         the page; Bun bundles what it references, no build step in development
   app.tsx            railroad's routes: each draws a resource's view
   styles.css         the design, with its rules at the top
-  resources/         a folder per resource: <name>-api.ts, <name>.ts, <name>-view.tsx
+  resources/         a folder per resource (<name>-api.ts, <name>.ts, <name>-view.tsx), toast.ts, icon.tsx
 tests/site.test.ts   routes, page and entry point; the browser-test rules are at its top
 .railway/railway.ts  the deploy; its rules are at its top
 ```
@@ -37,6 +37,7 @@ tests/site.test.ts   routes, page and entry point; the browser-test rules are at
 
 - **Use Bun.** Before adding a package, check what Bun has: its docs are in `node_modules/bun-types/docs/`. Server, WebSocket, SQLite, S3, files, hashing, `.env` and a test browser (`Bun.WebView`) are all built in.
 - **The page is railroad, not React.** Read the `railroad` skill before writing JSX: `onclick` and `class`, never `.get()` in JSX children, `list()` for an array that changes length.
+- **Icons are lucide.** Import the icon by name and draw it with `<Icon>`: `<Icon icon={Save} />` beside a label, `<Icon icon={X} label="Close" />` on its own. Never another icon set or inline SVG.
 - **Tests.** `bun test` fails below 100% coverage. Never lower the threshold; write the missing test. The client and `main.ts` aren't in the coverage table, so the browser and spawn tests are what cover them. `bun run typecheck` checks everything.
 - **The server.** `main.ts` keeps `.server.pid` so a server started in the background can be stopped with `bun run stop`. Tests read the `Listening on <url>` line: keep it, and keep it last.
 - **Assets.** Images and icons go in `src/` beside the HTML, referenced by a path relative to it, never `/static/...`.
