@@ -63,6 +63,10 @@ export async function setup(root: string) {
   await Bun.write(join(root, "CHANGELOG.md"), changelog);
   await Bun.write(join(root, "README.md"), readme(name));
 
+  // The app's own version, not the template's: its first `/release minor` makes 0.1.0
+  const pkg = Bun.file(join(root, "package.json"));
+  if (await pkg.exists()) await Bun.write(pkg, (await pkg.text()).replace(/"version": "[^"]*"/, '"version": "0.0.0"'));
+
   for (const path of NAMED) {
     const file = Bun.file(join(root, path));
     if (!(await file.exists())) continue;
@@ -127,7 +131,8 @@ resource: a route, a live push, SQLite, S3, a delta document.
 
 \`CHANGELOG.md\` and \`todo.jsonl\` are a pair, the project's memory between sessions:
 the changelog is where it has been, the ledger what is open now. When work lands it
-gets a changelog entry, and the item it settles is marked fixed.
+gets a changelog entry, and the item it settles is marked fixed. \`/release\` turns
+the unreleased entries into a version and takes the settled items out of the ledger.
 `;
 
 // Last, so the constants above exist when it runs. Only when run (bun create's

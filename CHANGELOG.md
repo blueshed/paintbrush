@@ -8,7 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 Paintbrush is again what it was for: routes and resources, with railroad for the page and
 Railway for the deploy, that a resource can evolve from. It follows the Bun website conventions
-(a small core, tests at 100%), so 0.3.0 moves nearly everything.
+(a small core, tests at 100%), so this release moves nearly everything. It is 0.5.0, after 0.2.4:
+the tags `v0.3.0` and `v0.4.0` were taken in February by the framework this replaced, so this
+is the first free version.
 
 ### Breaking (for apps started from 0.2.x)
 
@@ -65,6 +67,16 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
 
 ### Added
 
+- **`/release`** (`.claude/commands/release.md`), in every new app. It checks (`main`, a clean
+  tree, not behind, unreleased entries, the changelog and the ledger agreeing, a tag that is
+  free), runs the typecheck and the tests, turns `[Unreleased]` into the version, takes the
+  settled items out of `todo.jsonl`, bumps with `bun pm version --no-git-tag-version`, then
+  commits, tags and pushes. With no argument it reports where things stand. Tried first in a
+  scratch repo: `bun pm version` refuses any uncommitted change, and onto a tag that already
+  exists it commits and then fails, so the command bumps only and tags itself, after checking
+  the tag is free.
+- A new app starts at version 0.0.0, not the template's, so its first `/release minor` makes
+  0.1.0. Setup changes only the `version` line of `package.json`.
 - **Icons are lucide, from the start.** `lucide` is a dependency, and `src/resources/icon.tsx` draws
   an icon as a real SVG node (`<Icon icon={Save} />`), sized by the text around it, hidden from
   screen readers beside a label and read out as `label` when alone. The Save button has one, and
