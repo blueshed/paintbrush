@@ -55,6 +55,9 @@ button {
   border-radius: 4px;
   background: var(--surface);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 button:hover { background: var(--hover); }
 button.primary { background: var(--primary); color: var(--surface); border-color: var(--primary); }
@@ -71,6 +74,8 @@ input, textarea {
 textarea { min-height: 120px; resize: vertical; }
 
 /* --- Components --- */
+
+.icon { flex-shrink: 0; vertical-align: -0.125em; } /* lucide, through <Icon>: 1em, the text's colour */
 
 .toolbar {
   display: flex;
