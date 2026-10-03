@@ -29,6 +29,12 @@ Railway for the deploy, that a resource can evolve from. It follows the Bun webs
 
 ### Changed
 
+- **`CHANGELOG.md` and `todo.jsonl` are named as a pair.** They are the project's memory between
+  sessions: the changelog is where it has been, the ledger what is open now. `CLAUDE.md` says to
+  read both before starting, and that they move together as work lands: an entry under
+  `[Unreleased]`, and the item it settles marked fixed with a dated note. A new app's README and
+  the `evolve` skill's checklist say the same. The docs had described the two files apart, and
+  an agent that read `CLAUDE.md` took them as separate housekeeping.
 - **Bun comes first.** The README and `CLAUDE.md` open with Bun as the server of routes and
   resources, with a WebSocket, SQLite and S3 built in; railroad and Railway come after, as the
   way on.

@@ -25,7 +25,7 @@ Storage is a separate choice, made at any step: a JSON file (`message`), a table
 - [ ] Copy the closest example from references.md, or from status/message
 - [ ] Add a test for every route and method (400s included) and for what a person sees and clicks, a failure included
 - [ ] bun test (100% coverage) and bun run typecheck
-- [ ] CHANGELOG.md under [Unreleased]; todo.jsonl if something is left open
+- [ ] A CHANGELOG.md entry under [Unreleased], and in todo.jsonl the item it settles marked fixed (or a new one for what is left open)
 ```
 
 ## References

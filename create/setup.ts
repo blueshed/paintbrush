@@ -123,8 +123,11 @@ bun run typecheck
 \`\`\`
 
 \`CLAUDE.md\` says what is here and the rules. The \`evolve\` skill adds or changes a
-resource: a route, a live push, SQLite, S3, a delta document. \`todo.jsonl\` is the
-ledger of open work; \`CHANGELOG.md\` records what has changed.
+resource: a route, a live push, SQLite, S3, a delta document.
+
+\`CHANGELOG.md\` and \`todo.jsonl\` are a pair, the project's memory between sessions:
+the changelog is where it has been, the ledger what is open now. When work lands it
+gets a changelog entry, and the item it settles is marked fixed.
 `;
 
 // Last, so the constants above exist when it runs. Only when run (bun create's

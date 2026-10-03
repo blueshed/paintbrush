@@ -14,7 +14,9 @@ A Bun website of **routes and resources**. Bun is the server, the bundler and th
 
 **To add a resource or change one** (a new route, a live push, SQLite, S3, a shared delta document), use the `evolve` skill.
 
-`todo.jsonl` is the ledger of open work: check it first and keep it current. One JSON object per line: `n`, `status` (open / fixed / not fixed), `severity`, `area`, `file`, `summary`, `detail`, plus a dated `note` once an item is worked on. `CHANGELOG.md` records what has changed, under `## [Unreleased]` as it lands, breaking changes first.
+**Where the project is.** `CHANGELOG.md` and `todo.jsonl` are the project's memory between sessions, and they work as a pair: the changelog is where the project has been, the ledger is what is open now. Read both before starting: the open items, and what `## [Unreleased]` holds that no release has yet. As you work they move together, as it happens and not at the end. What you find or leave open goes into `todo.jsonl`. What lands goes under `## [Unreleased]`, breaking changes first, and the item it settles becomes `fixed` with a dated `note` saying so. A change with no entry, or an item marked fixed with no entry behind it, means the record is wrong.
+
+`todo.jsonl` has one JSON object per line: `n`, `status` (open / fixed / not fixed), `severity`, `area`, `file`, `summary`, `detail`, plus a dated `note` once an item is worked on.
 
 ## What is here
 
