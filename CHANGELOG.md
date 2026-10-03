@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-03
+
 Paintbrush is again what it was for: routes and resources, with railroad for the page and
 Railway for the deploy, that a resource can evolve from. It follows the Bun website conventions
 (a small core, tests at 100%), so this release moves nearly everything. It is 0.5.0, after 0.2.4:
