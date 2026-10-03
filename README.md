@@ -43,7 +43,7 @@ Every route and handler is visible in the code. An AI, or a person, can read `se
 
 ## A resource evolves
 
-It starts as HTTP routes, and a WebSocket tells every page what changed. When several people edit the same thing at once, it becomes a document in delta. delta keeps it in a JSON file, then SQLite, then Postgres, and the browser code does not change. Beyond that is eta. The client route and the view keep their names; what is under them changes. The `evolve` skill has each step, with its tests.
+It starts as HTTP routes, and a WebSocket tells every page what changed. When several people edit the same thing at once, it becomes a document in delta. delta keeps it in a JSON file, then SQLite, then Postgres, and the browser code does not change. Beyond that is eta, and shinko, a realtime shared tree with formulas, is on its way to being a resource too. The client route and the view keep their names; what is under them changes. The `evolve` skill has each step, with its tests.
 
 ## What's in the box
 

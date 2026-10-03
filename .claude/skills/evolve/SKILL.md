@@ -14,6 +14,8 @@ A resource is a folder `src/resources/<name>/` of three files: `<name>-api.ts` (
 | 3. A delta document | a document every window holds and every write patches | several people write parts of the same data | — |
 | 4. eta | a document drawn on the server, with who may write what stated as stories | several people at once, and who sees what matters | — |
 
+A realtime shared tree with formulas (shinko) is meant to become a resource the same way, perhaps as a flavour of delta. It is work in progress and not yet a step.
+
 Storage is a separate choice, made at any step: a JSON file (`message`), a table in SQLite, or files in an S3 bucket. A delta document has its own storage, which goes JSON file → SQLite → Postgres with no change to the browser code.
 
 ## Workflow
